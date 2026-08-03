@@ -55,3 +55,7 @@ Per `README.md`, this project is meant to follow spec-driven development using t
 Klerith/fernando-skills`). These skills are not yet installed in this repo — if asked to plan or
 implement a feature and those skills are unavailable, say so before improvising a different
 workflow.
+
+## Skills
+
+Usa siempre /frontend-design para hacer interfaces de usuarios
