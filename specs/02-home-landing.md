@@ -1,6 +1,6 @@
 # 02 — Home Landing
 
-- **Estado:** Draft
+- **Estado:** Approved
 - **Depende de:** SPEC 01
 - **Fecha:** 2026-08-04
 - **Objetivo:** Convertir `/` en la landing page Home (portada de `references/templates/home-about/home.jsx`) y mover la Biblioteca actual a `/games`, actualizando Nav y todos los enlaces internos afectados.
