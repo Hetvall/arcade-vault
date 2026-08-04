@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Static HTML/CSS/JS design prototype (references/templates/) — no
+    // build step, plain React-via-CDN JSX, not part of the Next.js app.
+    // It's a design reference to port from, not code to lint. See
+    // CLAUDE.md ("Design reference: references/templates/").
+    "references/templates/**",
   ]),
 ]);
 
