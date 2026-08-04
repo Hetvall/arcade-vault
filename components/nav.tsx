@@ -12,7 +12,8 @@ export default function Nav() {
   const { user, logout } = useSession();
 
   const isActive = (name: "biblioteca" | "salon" | "auth") => {
-    if (name === "biblioteca") return pathname === "/" || pathname.startsWith("/game/");
+    if (name === "biblioteca")
+      return pathname === "/" || pathname.startsWith("/game/");
     if (name === "salon") return pathname === "/leaderboard";
     return pathname === "/login";
   };
@@ -37,7 +38,10 @@ export default function Nav() {
           <Link href="/" className={isActive("biblioteca") ? "active" : ""}>
             Biblioteca
           </Link>
-          <Link href="/leaderboard" className={isActive("salon") ? "active" : ""}>
+          <Link
+            href="/leaderboard"
+            className={isActive("salon") ? "active" : ""}
+          >
             Salón de la Fama
           </Link>
         </div>
@@ -51,7 +55,10 @@ export default function Nav() {
             {user.name} ▾
           </button>
         ) : (
-          <button className="btn auth-btn" onClick={() => router.push("/login")}>
+          <button
+            className="btn auth-btn"
+            onClick={() => router.push("/login")}
+          >
             Iniciar Sesión
           </button>
         )}
@@ -68,7 +75,7 @@ export default function Nav() {
         className={"av-mobile-backdrop" + (open ? " open" : "")}
         onClick={close}
       ></div>
-      <aside className={"av-mobile-panel" + (open ? " open" : "")}>
+      {/* <aside className={"av-mobile-panel" + (open ? " open" : "")}>
         <div className="pixel neon-cyan" style={{ fontSize: 11, marginBottom: 16 }}>
           MENÚ
         </div>
@@ -92,7 +99,7 @@ export default function Nav() {
         >
           CRÉDITOS · 03
         </div>
-      </aside>
+      </aside> */}
     </>
   );
 }
