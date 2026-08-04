@@ -1,6 +1,6 @@
 # 01 — MVP Pantallas Visuales
 
-- **Estado:** Approved
+- **Estado:** Implemented
 - **Depende de:** —
 - **Fecha:** 2026-08-04
 - **Objetivo:** Implementar la interfaz visual completa de las 5 pantallas de Arcade Vault (Biblioteca, Detalle de juego, Reproductor simulado, Autenticación y Salón de la Fama) en Next.js App Router con Tailwind, replicando el diseño y las interacciones de `references/templates/` sin implementar lógica real de ningún juego.
