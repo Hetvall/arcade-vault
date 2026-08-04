@@ -116,7 +116,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ===== app frame ===== */
-body > *:not(.av-bg):not(.av-noise) { position: relative; z-index: 2; }
+body > *:not(.av-bg):not(.av-noise):not(.av-mobile-panel):not(.av-mobile-backdrop) { position: relative; z-index: 2; }
 .av-main { flex: 1; }
 
 /* ===== pixel + neon text ===== */
