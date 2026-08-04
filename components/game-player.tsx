@@ -13,7 +13,9 @@ export default function GamePlayer({ game }: { game: Game }) {
   const [lives] = useState(3);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
-  const [name, setName] = useState(() => user?.name ?? "INVITADO");
+  // "INVITADO" por defecto: coincide con el primer render en servidor y
+  // cliente (el usuario real de localStorage todavía no está disponible).
+  const [name, setName] = useState("INVITADO");
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -24,6 +26,16 @@ export default function GamePlayer({ game }: { game: Game }) {
     );
     return () => clearInterval(t);
   }, [over, paused]);
+
+  // Precarga las iniciales con el nombre de sesión en cuanto SessionProvider
+  // termina de sincronizarlo desde localStorage (ver el comentario en
+  // session-context.tsx). No pisa lo que el jugador ya haya escrito.
+  useEffect(() => {
+    if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setName(user.name);
+    }
+  }, [user]);
 
   // Nivel derivado de la puntuación: sube cada 2500 puntos, sin necesidad de
   // estado ni efecto propios.
@@ -43,7 +55,7 @@ export default function GamePlayer({ game }: { game: Game }) {
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           <div className="hud-stat">
             <div className="l">Jugador</div>
-            <div className="v" style={{ color: "var(--ink)" }} suppressHydrationWarning>
+            <div className="v" style={{ color: "var(--ink)" }}>
               {name}
             </div>
           </div>
@@ -117,7 +129,6 @@ export default function GamePlayer({ game }: { game: Game }) {
                   value={name}
                   onChange={(e) => setName(e.target.value.toUpperCase().slice(0, 10))}
                   placeholder="TUS INICIALES"
-                  suppressHydrationWarning
                 />
                 <button
                   className="btn yellow"

@@ -47,17 +47,13 @@ export default function Nav() {
           <span>CRÉDITOS · 03</span>
         </div>
         {user ? (
-          <button
-            className="btn ghost auth-btn"
-            onClick={handleSignOut}
-            suppressHydrationWarning
-          >
+          <button className="btn ghost auth-btn" onClick={handleSignOut}>
             {user.name} ▾
           </button>
         ) : (
-          <Link href="/login" className="btn auth-btn" suppressHydrationWarning>
+          <button className="btn auth-btn" onClick={() => router.push("/login")}>
             Iniciar Sesión
-          </Link>
+          </button>
         )}
         <button
           className="btn ghost hamburger"
@@ -86,12 +82,7 @@ export default function Nav() {
         >
           Salón de la Fama
         </Link>
-        <Link
-          href="/login"
-          className={isActive("auth") ? "active" : ""}
-          onClick={close}
-          suppressHydrationWarning
-        >
+        <Link href="/login" className={isActive("auth") ? "active" : ""} onClick={close}>
           {user ? "Cuenta" : "Iniciar Sesión"}
         </Link>
         <div style={{ flex: 1 }}></div>

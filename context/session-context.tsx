@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
   type ReactNode,
 } from "react";
@@ -27,15 +28,29 @@ interface SessionContextValue {
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  // Lazy initializer: lee localStorage directamente en vez de sincronizar
-  // vía useEffect (patrón recomendado por Next.js para estado dependiente
-  // de localStorage — ver "Preventing flash before hydration" en los docs).
-  // En el render de servidor `window` no existe, así que el valor inicial
-  // es siempre null/[]; los nodos de UI que dependen de `user`/`scores`
-  // deben marcarse con `suppressHydrationWarning` para aceptar el valor
-  // real que trae el cliente en el primer render.
-  const [user, setUser] = useState<SessionUser | null>(() => getStoredUser());
-  const [scores, setScores] = useState<SavedScore[]>(() => getStoredScores());
+  // Arranca en null/[] a propósito: en el render de servidor `window` no
+  // existe, y este es el mismo valor que verá el cliente en su primer
+  // render, así que servidor y cliente siempre coinciden (sin mismatch de
+  // hidratación posible). La sesión real de localStorage se sincroniza
+  // justo después de montar.
+  //
+  // Probamos antes un lazy initializer (leer localStorage directamente en
+  // el useState) siguiendo la guía de Next.js sobre "flash before
+  // hydration", pero para un valor compuesto (usuario + puntuaciones) que
+  // cambia la cantidad/forma de nodos renderizados (no solo un texto
+  // simple), provocó mismatches reales de hidratación que
+  // `suppressHydrationWarning` no cubre. El patrón useEffect+setState de
+  // abajo es el uso legítimo que la propia documentación de React reconoce
+  // para sincronizar con una API de navegador no disponible durante el
+  // render en servidor.
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [scores, setScores] = useState<SavedScore[]>([]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setUser(getStoredUser());
+    setScores(getStoredScores());
+  }, []);
 
   const login = (nextUser: SessionUser) => {
     setStoredUser(nextUser);
