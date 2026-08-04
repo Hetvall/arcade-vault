@@ -1,0 +1,20 @@
+[     342ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[     455ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[   14790ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[   14872ms] [LOG] [Fast Refresh] done in 184ms @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[   15023ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[   15123ms] [LOG] [Fast Refresh] done in 203ms @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  208175ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  208277ms] [LOG] [Fast Refresh] done in 206ms @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  242573ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  243064ms] [LOG] [Fast Refresh] done in 595ms @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  251298ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  251740ms] [LOG] [Fast Refresh] done in 548ms @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  256981ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  260274ms] [LOG] [Fast Refresh] done in 3396ms @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  300903ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  301206ms] [LOG] [Fast Refresh] done in 405ms @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  301330ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  301346ms] [LOG] [Fast Refresh] done in 122ms @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  607022ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
+[  607148ms] [LOG] [Fast Refresh] done in 230ms @ http://localhost:3000/_next/static/chunks/11qi_next_dist_189zk-7._.js:2489
