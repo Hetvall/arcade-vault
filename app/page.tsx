@@ -41,7 +41,7 @@ const RECENT_SCORES = [
   { p: "NEONFOX", g: "Caída", s: 184220, t: "hace 2 min", c: "magenta" },
   { p: "PX_KAI", g: "Glotón", s: 96400, t: "hace 5 min", c: "yellow" },
   { p: "Z3R0COOL", g: "Invasores", s: 54190, t: "hace 8 min", c: "green" },
-  { p: "VAULT_07", g: "Rocas", s: 41200, t: "hace 12 min", c: "cyan" },
+  { p: "VAULT_07", g: "Asteroids", s: 41200, t: "hace 12 min", c: "cyan" },
   { p: "GLITCHA", g: "Bloque Buster", s: 28450, t: "hace 18 min", c: "cyan" },
   { p: "ARKADYA", g: "Serpentina", s: 7820, t: "hace 24 min", c: "green" },
   { p: "CYBER_LU", g: "Ranaria", s: 18900, t: "hace 31 min", c: "yellow" },
@@ -216,9 +216,7 @@ export default function Page() {
                           : "")
                   }
                 >
-                  <span className="tp-rk">
-                    #{String(r.r).padStart(2, "0")}
-                  </span>
+                  <span className="tp-rk">#{String(r.r).padStart(2, "0")}</span>
                   <span className="tp-bar">
                     <span
                       className="tp-fill"
@@ -285,16 +283,15 @@ export default function Page() {
             <div className="faq-item">
               <div className="faq-q pixel">¿NECESITO CREAR CUENTA?</div>
               <div className="faq-a">
-                No. Puedes jugar como invitado. Si quieres guardar tu
-                puntuación y aparecer en el ranking, regístrate en 10
-                segundos.
+                No. Puedes jugar como invitado. Si quieres guardar tu puntuación
+                y aparecer en el ranking, regístrate en 10 segundos.
               </div>
             </div>
             <div className="faq-item">
               <div className="faq-q pixel">¿CÓMO SOBREVIVEN SIN COBRAR?</div>
               <div className="faq-a">
-                Es un proyecto comunitario. Si te gusta, compártelo. Esa es
-                toda la moneda que aceptamos.
+                Es un proyecto comunitario. Si te gusta, compártelo. Esa es toda
+                la moneda que aceptamos.
               </div>
             </div>
           </div>
@@ -318,13 +315,7 @@ export default function Page() {
   );
 }
 
-function MiniCard({
-  game,
-  onClick,
-}: {
-  game: Game;
-  onClick: () => void;
-}) {
+function MiniCard({ game, onClick }: { game: Game; onClick: () => void }) {
   return (
     <div className="mini-card" onClick={onClick}>
       <div className="mini-cover">

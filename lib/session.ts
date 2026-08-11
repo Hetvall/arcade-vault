@@ -52,9 +52,23 @@ export function addStoredScore(entry: Omit<SavedScore, "at">): void {
 export function bestScoreFor(
   game: string,
   playerName: string,
-  scores: SavedScore[],
+  scores: SavedScore[]
 ): SavedScore | null {
   const own = scores.filter((s) => s.game === game && s.name === playerName);
   if (own.length === 0) return null;
   return own.reduce((best, s) => (s.score > best.score ? s : best));
+}
+
+// Máximo puntaje guardado para un juego entre TODOS los jugadores/iniciales
+// registrados en este navegador (no solo el usuario en sesión). Usado para
+// el "Mejor global" de la pantalla de detalle (ver
+// specs/05-juego-asteroides.md); null si no hay ninguna partida guardada
+// para ese juego todavía.
+export function bestGlobalScoreFor(
+  game: string,
+  scores: SavedScore[]
+): number | null {
+  const own = scores.filter((s) => s.game === game);
+  if (own.length === 0) return null;
+  return own.reduce((best, s) => Math.max(best, s.score), 0);
 }
