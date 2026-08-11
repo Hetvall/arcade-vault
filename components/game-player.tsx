@@ -11,7 +11,7 @@ import type { AsteroidsState } from "@/lib/games/asteroids/engine";
 
 // Único juego con motor real por ahora (ver specs/05-juego-asteroides.md).
 // El resto del catálogo sigue con la arena placeholder + puntaje simulado.
-const HAS_REAL_ENGINE = new Set(["rocas"]);
+const HAS_REAL_ENGINE = new Set(["asteroids"]);
 
 export default function GamePlayer({ game }: { game: Game }) {
   const router = useRouter();
@@ -64,7 +64,6 @@ export default function GamePlayer({ game }: { game: Game }) {
     setLevel(state.level);
     setTripleShotSecondsLeft(state.tripleShotSecondsLeft);
     if (state.gameOver) {
-       
       setOver(true);
     }
   }, []);

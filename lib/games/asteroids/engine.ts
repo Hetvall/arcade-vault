@@ -401,7 +401,16 @@ export class AsteroidsEngine {
   }
 
   // ── Input ─────────────────────────────────────────────────────────────
+  private static readonly GAME_KEYS = new Set([
+    "Space",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+  ]);
+
   private onKeyDown = (e: KeyboardEvent) => {
+    if (AsteroidsEngine.GAME_KEYS.has(e.code)) e.preventDefault();
     if (!this.keys[e.code]) this.justPressed[e.code] = true;
     this.keys[e.code] = true;
   };
