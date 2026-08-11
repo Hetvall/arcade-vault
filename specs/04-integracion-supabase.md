@@ -1,6 +1,6 @@
 # 04 — Integración base de Supabase
 
-- **Estado:** Approved
+- **Estado:** Implemented
 - **Depende de:** —
 - **Fecha:** 2026-08-11
 - **Objetivo:** Conectar la aplicación Next.js al proyecto de Supabase ya existente (`skjiaowautazmyrnrepo`, configurado en `.mcp.json`) instalando y configurando los clientes oficiales (`@supabase/ssr` + `@supabase/supabase-js`) para navegador, Server Components/Route Handlers y proxy, sin migrar todavía ninguna funcionalidad real (auth, puntuaciones, leaderboard) a Supabase.
@@ -60,15 +60,15 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key del proyecto>
 
 ## Criterios de aceptación
 
-- [ ] `@supabase/supabase-js` y `@supabase/ssr` están en las dependencias de `package.json`.
-- [ ] `.env.local.example` documenta `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-- [ ] `.env.local` existe localmente con los valores reales del proyecto `skjiaowautazmyrnrepo` y no aparece en `git status` (sigue ignorado).
-- [ ] `lib/supabase/client.ts` exporta un helper que crea un cliente de Supabase de navegador.
-- [ ] `lib/supabase/server.ts` exporta un helper async que crea un cliente de Supabase de servidor integrado con las cookies de Next.js.
-- [ ] `proxy.ts` existe en la raíz, refresca la sesión de Supabase en cada request y excluye assets estáticos vía `matcher`.
-- [ ] `GET /api/health/supabase` responde `200 { ok: true }` cuando el proyecto Supabase es alcanzable, y `500 { ok: false, ... }` sin filtrar detalles internos si falla.
-- [ ] Ninguna pantalla existente (`/login`, `/leaderboard`, juegos) cambia de comportamiento: la sesión y las puntuaciones siguen siendo mock/`localStorage`.
-- [ ] `npm run lint` pasa sin errores nuevos.
+- [x] `@supabase/supabase-js` y `@supabase/ssr` están en las dependencias de `package.json`.
+- [x] `.env.local.example` documenta `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- [x] `.env.local` existe localmente con los valores reales del proyecto `skjiaowautazmyrnrepo` y no aparece en `git status` (sigue ignorado).
+- [x] `lib/supabase/client.ts` exporta un helper que crea un cliente de Supabase de navegador.
+- [x] `lib/supabase/server.ts` exporta un helper async que crea un cliente de Supabase de servidor integrado con las cookies de Next.js.
+- [x] `proxy.ts` existe en la raíz, refresca la sesión de Supabase en cada request y excluye assets estáticos vía `matcher`.
+- [x] `GET /api/health/supabase` responde `200 { ok: true }` cuando el proyecto Supabase es alcanzable, y `500 { ok: false, ... }` sin filtrar detalles internos si falla.
+- [x] Ninguna pantalla existente (`/login`, `/leaderboard`, juegos) cambia de comportamiento: la sesión y las puntuaciones siguen siendo mock/`localStorage`.
+- [x] `npm run lint` pasa sin errores nuevos.
 
 ## Decisiones tomadas y descartadas
 
