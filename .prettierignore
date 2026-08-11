@@ -1,0 +1,11 @@
+# Build output
+.next/
+out/
+build/
+
+# Dependencies
+node_modules/
+
+# Static HTML/CSS/JS design prototype — not part of the Next.js app.
+# See CLAUDE.md ("Design reference: references/templates/").
+references/templates/
