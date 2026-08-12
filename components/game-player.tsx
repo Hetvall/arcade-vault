@@ -28,6 +28,8 @@ export default function GamePlayer({ game }: { game: Game }) {
   // cliente (el usuario real de localStorage todavía no está disponible).
   const [name, setName] = useState("INVITADO");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   const asteroidsRef = useRef<AsteroidsCanvasHandle>(null);
 
@@ -73,6 +75,8 @@ export default function GamePlayer({ game }: { game: Game }) {
     setPaused(false);
     setOver(false);
     setSaved(false);
+    setSaving(false);
+    setSaveError(false);
     if (isAsteroids) {
       asteroidsRef.current?.restart();
     } else {
@@ -187,16 +191,34 @@ export default function GamePlayer({ game }: { game: Game }) {
                     setName(e.target.value.toUpperCase().slice(0, 10))
                   }
                   placeholder="TUS INICIALES"
+                  disabled={saving}
                 />
                 <button
                   className="btn yellow"
-                  onClick={() => {
-                    saveScore({ game: game.id, score, name });
-                    setSaved(true);
+                  disabled={saving}
+                  onClick={async () => {
+                    setSaving(true);
+                    setSaveError(false);
+                    const { ok } = await saveScore({
+                      game: game.id,
+                      score,
+                      name,
+                    });
+                    setSaving(false);
+                    if (ok) {
+                      setSaved(true);
+                    } else {
+                      setSaveError(true);
+                    }
                   }}
                 >
-                  GUARDAR PUNTUACIÓN
+                  {saving ? "GUARDANDO…" : "GUARDAR PUNTUACIÓN"}
                 </button>
+                {saveError && (
+                  <div className="toast-error">
+                    ▸ NO SE PUDO GUARDAR — REINTENTAR
+                  </div>
+                )}
               </div>
             ) : (
               <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>

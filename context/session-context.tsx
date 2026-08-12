@@ -7,28 +7,26 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  addStoredScore,
-  getStoredScores,
-  getStoredUser,
-  setStoredUser,
-  type SavedScore,
-  type SessionUser,
-} from "@/lib/session";
+import { getStoredUser, setStoredUser, type SessionUser } from "@/lib/session";
+import { createClient } from "@/lib/supabase/client";
+import { insertScore } from "@/lib/supabase/games";
 
 interface SessionContextValue {
   user: SessionUser | null;
-  scores: SavedScore[];
   login: (user: SessionUser) => void;
   logout: () => void;
   playAsGuest: () => void;
-  saveScore: (entry: Omit<SavedScore, "at">) => void;
+  saveScore: (entry: {
+    game: string;
+    name: string;
+    score: number;
+  }) => Promise<{ ok: boolean }>;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  // Arranca en null/[] a propósito: en el render de servidor `window` no
+  // Arranca en null a propósito: en el render de servidor `window` no
   // existe, y este es el mismo valor que verá el cliente en su primer
   // render, así que servidor y cliente siempre coinciden (sin mismatch de
   // hidratación posible). La sesión real de localStorage se sincroniza
@@ -36,20 +34,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   //
   // Probamos antes un lazy initializer (leer localStorage directamente en
   // el useState) siguiendo la guía de Next.js sobre "flash before
-  // hydration", pero para un valor compuesto (usuario + puntuaciones) que
-  // cambia la cantidad/forma de nodos renderizados (no solo un texto
-  // simple), provocó mismatches reales de hidratación que
-  // `suppressHydrationWarning` no cubre. El patrón useEffect+setState de
-  // abajo es el uso legítimo que la propia documentación de React reconoce
-  // para sincronizar con una API de navegador no disponible durante el
-  // render en servidor.
+  // hydration", pero para un valor compuesto que cambia la cantidad/forma
+  // de nodos renderizados (no solo un texto simple), provocó mismatches
+  // reales de hidratación que `suppressHydrationWarning` no cubre. El
+  // patrón useEffect+setState de abajo es el uso legítimo que la propia
+  // documentación de React reconoce para sincronizar con una API de
+  // navegador no disponible durante el render en servidor.
   const [user, setUser] = useState<SessionUser | null>(null);
-  const [scores, setScores] = useState<SavedScore[]>([]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setUser(getStoredUser());
-    setScores(getStoredScores());
   }, []);
 
   const login = (nextUser: SessionUser) => {
@@ -67,14 +62,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // continúa sin autenticarse.
   };
 
-  const saveScore = (entry: Omit<SavedScore, "at">) => {
-    addStoredScore(entry);
-    setScores(getStoredScores());
+  const saveScore = async (entry: {
+    game: string;
+    name: string;
+    score: number;
+  }) => {
+    const { error } = await insertScore(createClient(), entry);
+    return { ok: !error };
   };
 
   return (
     <SessionContext.Provider
-      value={{ user, scores, login, logout, playAsGuest, saveScore }}
+      value={{ user, login, logout, playAsGuest, saveScore }}
     >
       {children}
     </SessionContext.Provider>

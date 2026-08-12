@@ -1445,6 +1445,16 @@ body
   }
 }
 
+.toast-error {
+  font-family: var(--pixel);
+  font-size: 11px;
+  color: var(--magenta);
+  text-shadow: 0 0 8px var(--magenta);
+  margin-top: 14px;
+  width: 100%;
+  text-align: center;
+}
+
 /* ===== auth ===== */
 .av-auth-wrap {
   display: flex;
