@@ -1,6 +1,6 @@
 # 06 — Leaderboard y catálogo de juegos en Supabase
 
-- **Estado:** Approved
+- **Estado:** Implemented
 - **Depende de:** SPEC 04
 - **Fecha:** 2026-08-12
 - **Objetivo:** Migrar el catálogo de juegos (`GAMES`) y las puntuaciones guardadas a tablas reales de Supabase (`games`, `scores`), reemplazando los datos falsos (`seededScores`) y el guardado en `localStorage` (`av_scores`) por consultas y escrituras reales en `/games`, `/game/[id]` y `/leaderboard`.
