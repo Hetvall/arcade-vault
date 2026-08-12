@@ -1253,6 +1253,42 @@ body
   display: block;
 }
 
+/* Tetris (fila "tetris"): tablero de resolución lógica fija 300x600 (10x20
+   celdas de 30px, ver lib/games/tetris/engine.ts), más angosto que el
+   .crt-screen 4:3 que lo contiene. Se escala por altura manteniendo su
+   proporción 1:2 y se centra horizontalmente; la preview de la siguiente
+   pieza (120x120) se ubica en el lateral derecho de la pantalla, en el
+   espacio que deja libre el tablero, sin solaparse con él. Lleva un marco
+   neón que delimita visualmente el límite jugable del tablero. */
+.tetris-canvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: auto;
+  aspect-ratio: 1 / 2;
+  transform: translateX(-50%);
+  display: block;
+  border: 2px solid rgba(255, 0, 110, 0.7);
+  border-radius: 6px;
+  box-shadow:
+    0 0 12px rgba(255, 0, 110, 0.55),
+    0 0 28px rgba(255, 0, 110, 0.25),
+    inset 0 0 14px rgba(255, 0, 110, 0.12);
+}
+
+.tetris-next-canvas {
+  position: absolute;
+  top: 6%;
+  right: 4%;
+  width: 20%;
+  aspect-ratio: 1 / 1;
+  display: block;
+  border: 1px solid rgba(255, 0, 110, 0.45);
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(255, 0, 110, 0.3);
+}
+
 /* fake in-screen game */
 .game-arena {
   position: absolute;
