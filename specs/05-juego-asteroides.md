@@ -1,6 +1,6 @@
 # 05 — Juego Asteroides (ROCAS)
 
-- **Estado:** Approved
+- **Estado:** Implemented
 - **Depende de:** —
 - **Fecha:** 2026-08-11
 - **Objetivo:** Portar el prototipo de Asteroids (`references/started-games/02-asteroids/game.js`) a un motor TypeScript reutilizable y conectarlo a la entrada `rocas` del catálogo, reemplazando la arena placeholder de `GamePlayer` por el juego real con HUD, pausa, fin de partida y guardado de puntuación integrados a la plataforma.
