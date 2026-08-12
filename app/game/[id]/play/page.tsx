@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { GAMES } from "@/lib/games";
+import { createClient } from "@/lib/supabase/server";
+import { fetchGameById } from "@/lib/supabase/games";
 import GamePlayer from "@/components/game-player";
 
 export default async function GamePlayPage({
@@ -8,7 +9,8 @@ export default async function GamePlayPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const game = GAMES.find((g) => g.id === id);
+  const supabase = await createClient();
+  const game = await fetchGameById(supabase, id);
   if (!game) notFound();
 
   return <GamePlayer game={game} />;

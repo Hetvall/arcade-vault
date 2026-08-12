@@ -4,7 +4,13 @@ import { useRef, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Game } from "@/lib/games";
 
-export default function GameCard({ game }: { game: Game }) {
+export default function GameCard({
+  game,
+  best,
+}: {
+  game: Game;
+  best: number | null;
+}) {
   const tiltRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -26,7 +32,11 @@ export default function GameCard({ game }: { game: Game }) {
   };
 
   const colorClass =
-    game.color === "magenta" ? "magenta" : game.color === "yellow" ? "yellow" : "";
+    game.color === "magenta"
+      ? "magenta"
+      : game.color === "yellow"
+        ? "yellow"
+        : "";
 
   return (
     <div
@@ -46,7 +56,7 @@ export default function GameCard({ game }: { game: Game }) {
         <div className="row">
           <div className="score-badge">
             <span>MEJOR PUNTUACIÓN</span>
-            <b>{game.best.toLocaleString("es-ES")}</b>
+            <b>{best !== null ? best.toLocaleString("es-ES") : "—"}</b>
           </div>
           <button
             className={`btn ${colorClass}`}
