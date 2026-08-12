@@ -8,18 +8,26 @@ import AsteroidsCanvas, {
   type AsteroidsCanvasHandle,
 } from "@/components/games/asteroids-canvas";
 import type { AsteroidsState } from "@/lib/games/asteroids/engine";
+import TetrisCanvas, {
+  type TetrisCanvasHandle,
+} from "@/components/games/tetris-canvas";
+import type { TetrisState } from "@/lib/games/tetris/engine";
 
-// Único juego con motor real por ahora (ver specs/05-juego-asteroides.md).
-// El resto del catálogo sigue con la arena placeholder + puntaje simulado.
-const HAS_REAL_ENGINE = new Set(["asteroids"]);
+// Juegos con motor real (ver specs/05-juego-asteroides.md y
+// specs/07-juego-tetris.md). El resto del catálogo sigue con la arena
+// placeholder + puntaje simulado.
+const HAS_REAL_ENGINE = new Set(["asteroids", "tetris"]);
 
 export default function GamePlayer({ game }: { game: Game }) {
   const router = useRouter();
   const { user, saveScore } = useSession();
-  const isAsteroids = HAS_REAL_ENGINE.has(game.id);
+  const isAsteroids = game.id === "asteroids";
+  const isTetris = game.id === "tetris";
+  const hasRealEngine = HAS_REAL_ENGINE.has(game.id);
 
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
+  const [lines, setLines] = useState(0);
   const [level, setLevel] = useState(1);
   const [tripleShotSecondsLeft, setTripleShotSecondsLeft] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -32,16 +40,17 @@ export default function GamePlayer({ game }: { game: Game }) {
   const [saveError, setSaveError] = useState(false);
 
   const asteroidsRef = useRef<AsteroidsCanvasHandle>(null);
+  const tetrisRef = useRef<TetrisCanvasHandle>(null);
 
   // Puntaje simulado, solo para los juegos que todavía no tienen motor real.
   useEffect(() => {
-    if (isAsteroids || over || paused) return;
+    if (hasRealEngine || over || paused) return;
     const t = setInterval(
       () => setScore((s) => s + Math.floor(10 + Math.random() * 90)),
       220
     );
     return () => clearInterval(t);
-  }, [isAsteroids, over, paused]);
+  }, [hasRealEngine, over, paused]);
 
   // Precarga las iniciales con el nombre de sesión en cuanto SessionProvider
   // termina de sincronizarlo desde localStorage (ver el comentario en
@@ -54,9 +63,10 @@ export default function GamePlayer({ game }: { game: Game }) {
   }, [user]);
 
   // Nivel derivado de la puntuación, solo para los juegos con puntaje
-  // simulado. Asteroids reporta su propio nivel real vía onStateChange.
+  // simulado. Asteroids y Tetris reportan su propio nivel real vía
+  // onStateChange.
   const simulatedLevel = Math.floor(score / 2500) + 1;
-  const displayLevel = isAsteroids ? level : simulatedLevel;
+  const displayLevel = hasRealEngine ? level : simulatedLevel;
 
   // Estado real del motor de Asteroids, reemplazando el HUD/overlay que el
   // canvas original dibujaba (ver lib/games/asteroids/engine.ts).
@@ -65,6 +75,17 @@ export default function GamePlayer({ game }: { game: Game }) {
     setLives(state.lives);
     setLevel(state.level);
     setTripleShotSecondsLeft(state.tripleShotSecondsLeft);
+    if (state.gameOver) {
+      setOver(true);
+    }
+  }, []);
+
+  // Estado real del motor de Tetris, reemplazando el HUD/overlay que el
+  // canvas original dibujaba (ver lib/games/tetris/engine.ts).
+  const handleTetrisStateChange = useCallback((state: TetrisState) => {
+    setScore(state.score);
+    setLines(state.lines);
+    setLevel(state.level);
     if (state.gameOver) {
       setOver(true);
     }
@@ -79,6 +100,8 @@ export default function GamePlayer({ game }: { game: Game }) {
     setSaveError(false);
     if (isAsteroids) {
       asteroidsRef.current?.restart();
+    } else if (isTetris) {
+      tetrisRef.current?.restart();
     } else {
       setScore(0);
     }
@@ -99,8 +122,10 @@ export default function GamePlayer({ game }: { game: Game }) {
             <div className="v">{score.toLocaleString("es-ES")}</div>
           </div>
           <div className="hud-stat lives">
-            <div className="l">Vidas</div>
-            <div className="v">{"♥ ".repeat(lives).trim() || "—"}</div>
+            <div className="l">{isTetris ? "Líneas" : "Vidas"}</div>
+            <div className="v">
+              {isTetris ? lines : "♥ ".repeat(lives).trim() || "—"}
+            </div>
           </div>
           <div className="hud-stat level">
             <div className="l">Nivel</div>
@@ -136,6 +161,12 @@ export default function GamePlayer({ game }: { game: Game }) {
               ref={asteroidsRef}
               paused={paused || over}
               onStateChange={handleAsteroidsStateChange}
+            />
+          ) : isTetris ? (
+            <TetrisCanvas
+              ref={tetrisRef}
+              paused={paused || over}
+              onStateChange={handleTetrisStateChange}
             />
           ) : (
             <div className="game-arena">
