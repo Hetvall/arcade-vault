@@ -12,17 +12,22 @@ import TetrisCanvas, {
   type TetrisCanvasHandle,
 } from "@/components/games/tetris-canvas";
 import type { TetrisState } from "@/lib/games/tetris/engine";
+import ArkanoidCanvas, {
+  type ArkanoidCanvasHandle,
+} from "@/components/games/arkanoid-canvas";
+import type { ArkanoidState } from "@/lib/games/arkanoid/engine";
 
-// Juegos con motor real (ver specs/05-juego-asteroides.md y
-// specs/07-juego-tetris.md). El resto del catálogo sigue con la arena
-// placeholder + puntaje simulado.
-const HAS_REAL_ENGINE = new Set(["asteroids", "tetris"]);
+// Juegos con motor real (ver specs/05-juego-asteroides.md,
+// specs/07-juego-tetris.md y specs/08-juego-arkanoid.md). El resto del
+// catálogo sigue con la arena placeholder + puntaje simulado.
+const HAS_REAL_ENGINE = new Set(["asteroids", "tetris", "arkanoid"]);
 
 export default function GamePlayer({ game }: { game: Game }) {
   const router = useRouter();
   const { user, saveScore } = useSession();
   const isAsteroids = game.id === "asteroids";
   const isTetris = game.id === "tetris";
+  const isArkanoid = game.id === "arkanoid";
   const hasRealEngine = HAS_REAL_ENGINE.has(game.id);
 
   const [score, setScore] = useState(0);
@@ -41,6 +46,7 @@ export default function GamePlayer({ game }: { game: Game }) {
 
   const asteroidsRef = useRef<AsteroidsCanvasHandle>(null);
   const tetrisRef = useRef<TetrisCanvasHandle>(null);
+  const arkanoidRef = useRef<ArkanoidCanvasHandle>(null);
 
   // Puntaje simulado, solo para los juegos que todavía no tienen motor real.
   useEffect(() => {
@@ -91,6 +97,19 @@ export default function GamePlayer({ game }: { game: Game }) {
     }
   }, []);
 
+  // Estado real del motor de Arkanoid, reemplazando el HUD/overlay que el
+  // canvas original dibujaba (ver lib/games/arkanoid/engine.ts). Arkanoid
+  // tiene vidas como Asteroids, así que reutiliza el estado `lives`
+  // existente y cae en la misma rama "Vidas" del HUD.
+  const handleArkanoidStateChange = useCallback((state: ArkanoidState) => {
+    setScore(state.score);
+    setLives(state.lives);
+    setLevel(state.level);
+    if (state.gameOver) {
+      setOver(true);
+    }
+  }, []);
+
   const endGame = () => setOver(true);
   const restart = () => {
     setPaused(false);
@@ -102,6 +121,8 @@ export default function GamePlayer({ game }: { game: Game }) {
       asteroidsRef.current?.restart();
     } else if (isTetris) {
       tetrisRef.current?.restart();
+    } else if (isArkanoid) {
+      arkanoidRef.current?.restart();
     } else {
       setScore(0);
     }
@@ -167,6 +188,12 @@ export default function GamePlayer({ game }: { game: Game }) {
               ref={tetrisRef}
               paused={paused || over}
               onStateChange={handleTetrisStateChange}
+            />
+          ) : isArkanoid ? (
+            <ArkanoidCanvas
+              ref={arkanoidRef}
+              paused={paused || over}
+              onStateChange={handleArkanoidStateChange}
             />
           ) : (
             <div className="game-arena">

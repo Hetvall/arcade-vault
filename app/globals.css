@@ -1253,6 +1253,17 @@ body
   display: block;
 }
 
+/* Arkanoid: canvas de resolución lógica fija 800x600 escalado por CSS
+   dentro de .crt-screen (que ya mantiene aspect-ratio 4/3), mismo patrón
+   que .asteroids-canvas. */
+.arkanoid-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* Tetris (fila "tetris"): tablero de resolución lógica fija 300x600 (10x20
    celdas de 30px, ver lib/games/tetris/engine.ts), más angosto que el
    .crt-screen 4:3 que lo contiene. Se escala por altura manteniendo su
