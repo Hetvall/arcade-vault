@@ -16,11 +16,16 @@ import ArkanoidCanvas, {
   type ArkanoidCanvasHandle,
 } from "@/components/games/arkanoid-canvas";
 import type { ArkanoidState } from "@/lib/games/arkanoid/engine";
+import SnakeCanvas, {
+  type SnakeCanvasHandle,
+} from "@/components/games/snake-canvas";
+import type { SnakeState } from "@/lib/games/snake/engine";
 
 // Juegos con motor real (ver specs/05-juego-asteroides.md,
-// specs/07-juego-tetris.md y specs/08-juego-arkanoid.md). El resto del
-// catálogo sigue con la arena placeholder + puntaje simulado.
-const HAS_REAL_ENGINE = new Set(["asteroids", "tetris", "arkanoid"]);
+// specs/07-juego-tetris.md, specs/08-juego-arkanoid.md y
+// specs/09-juego-snake.md). El resto del catálogo sigue con la arena
+// placeholder + puntaje simulado.
+const HAS_REAL_ENGINE = new Set(["asteroids", "tetris", "arkanoid", "snake"]);
 
 export default function GamePlayer({ game }: { game: Game }) {
   const router = useRouter();
@@ -28,11 +33,13 @@ export default function GamePlayer({ game }: { game: Game }) {
   const isAsteroids = game.id === "asteroids";
   const isTetris = game.id === "tetris";
   const isArkanoid = game.id === "arkanoid";
+  const isSnake = game.id === "snake";
   const hasRealEngine = HAS_REAL_ENGINE.has(game.id);
 
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [lines, setLines] = useState(0);
+  const [length, setLength] = useState(0);
   const [level, setLevel] = useState(1);
   const [tripleShotSecondsLeft, setTripleShotSecondsLeft] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -47,6 +54,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   const asteroidsRef = useRef<AsteroidsCanvasHandle>(null);
   const tetrisRef = useRef<TetrisCanvasHandle>(null);
   const arkanoidRef = useRef<ArkanoidCanvasHandle>(null);
+  const snakeRef = useRef<SnakeCanvasHandle>(null);
 
   // Puntaje simulado, solo para los juegos que todavía no tienen motor real.
   useEffect(() => {
@@ -110,6 +118,18 @@ export default function GamePlayer({ game }: { game: Game }) {
     }
   }, []);
 
+  // Estado real del motor de Snake, reemplazando el HUD/overlay que el
+  // canvas original dibujaba (ver lib/games/snake/engine.ts). Snake es de
+  // una sola vida: no usa `lives`, reporta `length` en su lugar.
+  const handleSnakeStateChange = useCallback((state: SnakeState) => {
+    setScore(state.score);
+    setLength(state.length);
+    setLevel(state.level);
+    if (state.gameOver) {
+      setOver(true);
+    }
+  }, []);
+
   const endGame = () => setOver(true);
   const restart = () => {
     setPaused(false);
@@ -123,6 +143,8 @@ export default function GamePlayer({ game }: { game: Game }) {
       tetrisRef.current?.restart();
     } else if (isArkanoid) {
       arkanoidRef.current?.restart();
+    } else if (isSnake) {
+      snakeRef.current?.restart();
     } else {
       setScore(0);
     }
@@ -143,9 +165,15 @@ export default function GamePlayer({ game }: { game: Game }) {
             <div className="v">{score.toLocaleString("es-ES")}</div>
           </div>
           <div className="hud-stat lives">
-            <div className="l">{isTetris ? "Líneas" : "Vidas"}</div>
+            <div className="l">
+              {isTetris ? "Líneas" : isSnake ? "Longitud" : "Vidas"}
+            </div>
             <div className="v">
-              {isTetris ? lines : "♥ ".repeat(lives).trim() || "—"}
+              {isTetris
+                ? lines
+                : isSnake
+                  ? length
+                  : "♥ ".repeat(lives).trim() || "—"}
             </div>
           </div>
           <div className="hud-stat level">
@@ -194,6 +222,12 @@ export default function GamePlayer({ game }: { game: Game }) {
               ref={arkanoidRef}
               paused={paused || over}
               onStateChange={handleArkanoidStateChange}
+            />
+          ) : isSnake ? (
+            <SnakeCanvas
+              ref={snakeRef}
+              paused={paused || over}
+              onStateChange={handleSnakeStateChange}
             />
           ) : (
             <div className="game-arena">
