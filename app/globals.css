@@ -1300,6 +1300,28 @@ body
   box-shadow: 0 0 8px rgba(255, 0, 110, 0.3);
 }
 
+/* Snake: tablero cuadrado de resolución lógica fija 800x800 (20x20 celdas de
+   40px, ver lib/games/snake/engine.ts), se escala por altura manteniendo su
+   proporción 1:1 y se centra horizontalmente dentro del .crt-screen 4:3,
+   mismo enfoque que .tetris-canvas. Marco neón verde acorde al color del
+   juego en el catálogo. */
+.snake-canvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: auto;
+  aspect-ratio: 1 / 1;
+  transform: translateX(-50%);
+  display: block;
+  border: 2px solid rgba(0, 255, 128, 0.7);
+  border-radius: 6px;
+  box-shadow:
+    0 0 12px rgba(0, 255, 128, 0.55),
+    0 0 28px rgba(0, 255, 128, 0.25),
+    inset 0 0 14px rgba(0, 255, 128, 0.12);
+}
+
 /* fake in-screen game */
 .game-arena {
   position: absolute;
