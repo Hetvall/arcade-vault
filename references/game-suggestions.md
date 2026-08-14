@@ -19,8 +19,11 @@ Estados: `[ ]` sugerido · `[~]` aprobado (spec en curso) · `[x]` implementado
       en `references/started-games/` que cambie la prioridad.)
 - [ ] `invasores` — Space Invaders (SHOOTER) · placeholder en catálogo, sin engine.
       (reafirmado 2026-08-14: sigue como placeholder sin motor real.)
-- [ ] `ranaria` — Frogger (ARCADE) · placeholder en catálogo, sin engine.
-      (reafirmado 2026-08-14: sigue como placeholder sin motor real.)
+- [~] `ranaria` — Frogger reinventado (ARCADE) · spec en curso 2026-08-14 vía agente `game-jam`
+  (tema "Frogger"): rol invertido (garza que caza ranas cruzando autopista/río de ida y
+  vuelta), no un port 1:1. Specs en `specs/game-jam/ranaria/{01-diseno,02-tecnico}.md`
+  (Draft, pendiente de revisión humana). El técnico **actualiza** la fila `ranaria` existente
+  (mismo id/title/cat/color/cover), no inserta una fila nueva.
 - [ ] `air-hockey` — Air Hockey (VERSUS) · sugerido 2026-08-14 · Razón: VERSUS sigue sin ningún
       motor real hoy; duelo físico en tiempo real, mecánica distinta al rebote de Pong.
       → `/add-game air-hockey`
