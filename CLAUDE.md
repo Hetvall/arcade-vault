@@ -46,6 +46,17 @@ migrations itself. Use it (`/add-game <carpeta-de-referencia-o-descripción>`) i
 freehanding a new game spec. Reference engines to port live in `references/started-games/`
 (currently `02-asteroids`, `03-tetris`, `04-arkanoid`).
 
+### `game-planner` agent — deciding what to add next
+
+`.claude/agents/game-planner.md` is a subagent (`model: opus`) that runs **before** `/add-game`:
+it decides _which_ game makes sense to add next (not how to port it). It reads the Supabase
+catalog (`references/implemented-games.md`), `HAS_REAL_ENGINE`, and unconsumed sources in
+`references/started-games/`, then recommends one game with justification (catalog placeholders
+first, thin categories like VERSUS/PUZZLE weighted higher). It keeps a persistent, git-tracked
+memory of past suggestions in `references/game-suggestions.md` (a checklist) so it never repeats a
+recommendation across runs. It only recommends and records — it never writes specs, code, or
+migrations; the output is "run `/add-game <id>`" for the user to act on.
+
 ## Current state
 
 Implemented specs (`specs/01`–`09`, all `Implemented` except where noted):
