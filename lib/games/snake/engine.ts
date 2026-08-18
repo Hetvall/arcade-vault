@@ -20,6 +20,46 @@ export interface SnakeCallbacks {
   onStateChange: (state: SnakeState) => void;
 }
 
+// ── Contrato de skin ────────────────────────────────────────────────────────
+// Paleta inyectada por el constructor y consumida por los métodos draw* en
+// lugar de literales de color.
+//
+// Snake es sprite-based (la comida se dibuja desde /snake-assets/fruits.png),
+// así que una skin de solo color no basta para la fruta. Enfoque: la serpiente,
+// el tablero y la rejilla se recolorean con tokens planos; la fruta se **tiñe**
+// dibujándola en un canvas offscreen y superponiendo el color de la skin con
+// `globalCompositeOperation = "source-atop"` (respeta la silueta y el sombreado
+// del sprite pero desplaza su tono hacia el acento de la skin). `foodTint: null`
+// (clásico) deja el sprite intacto.
+export interface SnakePalette {
+  background: string; // fondo del tablero
+  grid: string; // líneas de rejilla (incluye su propio alfa)
+  snakeHead: string; // primer segmento
+  snakeBody: string; // resto de segmentos
+  snakeGlow: string; // shadowColor de la serpiente
+  glowHead: number; // shadowBlur de la cabeza (0 = sin brillo)
+  glowBody: number; // shadowBlur del cuerpo
+  foodTint: string | null; // color de tinte del sprite de fruta; null = intacto
+  foodTintAlpha: number; // intensidad del tinte (0..1); ignorado si foodTint null
+  foodFallback: string; // color del rombo mientras carga fruits.png
+}
+
+// Skin "clásico": réplica 1:1 de los literales que el engine ya usaba (fondo
+// verde-negro, cabeza verde clara, cuerpo verde, fruta sin teñir). Es el
+// default y nunca debe reinventarse.
+export const CLASSIC_SNAKE_PALETTE: SnakePalette = {
+  background: "#0a0f0a",
+  grid: "rgba(0, 255, 128, 0.08)",
+  snakeHead: "#7cff7c",
+  snakeBody: "#22e06a",
+  snakeGlow: "#22e06a",
+  glowHead: 12,
+  glowBody: 6,
+  foodTint: null,
+  foodTintAlpha: 0,
+  foodFallback: "#ff4d6d",
+};
+
 const GRID = 20; // celdas por lado
 const CELL = 40; // px lógicos por celda (canvas 800x800)
 const CANVAS_SIZE = GRID * CELL;
@@ -79,8 +119,14 @@ const DIR_RIGHT: Vec = { x: 1, y: 0 };
 export class SnakeEngine {
   private ctx: CanvasRenderingContext2D;
   private callbacks: SnakeCallbacks;
+  private palette: SnakePalette;
   private image: HTMLImageElement;
   private imageLoaded = false;
+
+  // Canvas offscreen reutilizable para teñir el sprite de fruta sin afectar al
+  // resto del tablero (ver comentario en SnakePalette). Se crea perezosamente.
+  private tintCanvas: HTMLCanvasElement | null = null;
+  private tintCtx: CanvasRenderingContext2D | null = null;
 
   private snake!: Vec[];
   private direction!: Vec;
@@ -99,11 +145,16 @@ export class SnakeEngine {
   private tickInterval = TICK_START_MS;
   private rafId: number | null = null;
 
-  constructor(canvas: HTMLCanvasElement, callbacks: SnakeCallbacks) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    callbacks: SnakeCallbacks,
+    palette: SnakePalette = CLASSIC_SNAKE_PALETTE
+  ) {
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("No se pudo obtener el contexto 2D del canvas.");
     this.ctx = ctx;
     this.callbacks = callbacks;
+    this.palette = palette;
 
     this.image = new Image();
     this.image.onload = () => {
@@ -133,6 +184,12 @@ export class SnakeEngine {
 
   restart() {
     this.initGame();
+  }
+
+  // Cambio de skin en caliente: el reproductor lo llama sin recrear el motor ni
+  // reiniciar la partida. El próximo frame ya se dibuja con la nueva paleta.
+  setPalette(palette: SnakePalette) {
+    this.palette = palette;
   }
 
   destroy() {
@@ -284,10 +341,10 @@ export class SnakeEngine {
   // specs/09-juego-snake.md).
   private drawBoard() {
     const ctx = this.ctx;
-    ctx.fillStyle = "#0a0f0a";
+    ctx.fillStyle = this.palette.background;
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-    ctx.strokeStyle = "rgba(0, 255, 128, 0.08)";
+    ctx.strokeStyle = this.palette.grid;
     ctx.lineWidth = 1;
     for (let i = 1; i < GRID; i++) {
       ctx.beginPath();
@@ -303,19 +360,32 @@ export class SnakeEngine {
 
   private drawSnake() {
     const ctx = this.ctx;
+    const pal = this.palette;
     this.snake.forEach((seg, i) => {
       const isHead = i === 0;
-      ctx.fillStyle = isHead ? "#7cff7c" : "#22e06a";
-      ctx.shadowColor = "#22e06a";
-      ctx.shadowBlur = isHead ? 12 : 6;
+      ctx.fillStyle = isHead ? pal.snakeHead : pal.snakeBody;
+      ctx.shadowColor = pal.snakeGlow;
+      ctx.shadowBlur = isHead ? pal.glowHead : pal.glowBody;
       ctx.fillRect(seg.x * CELL + 2, seg.y * CELL + 2, CELL - 4, CELL - 4);
       ctx.shadowBlur = 0;
     });
   }
 
+  // Devuelve (creándolo perezosamente) el canvas offscreen de tinte de fruta.
+  private getTintCtx(size: number): CanvasRenderingContext2D | null {
+    if (!this.tintCanvas) {
+      this.tintCanvas = document.createElement("canvas");
+      this.tintCanvas.width = size;
+      this.tintCanvas.height = size;
+      this.tintCtx = this.tintCanvas.getContext("2d");
+    }
+    return this.tintCtx;
+  }
+
   private drawFood() {
     if (!this.food) return;
     const ctx = this.ctx;
+    const pal = this.palette;
     const pad = 4;
     const dx = this.food.pos.x * CELL + pad;
     const dy = this.food.pos.y * CELL + pad;
@@ -323,10 +393,29 @@ export class SnakeEngine {
 
     if (this.imageLoaded) {
       const f = this.food.frame;
-      ctx.drawImage(this.image, f.x, f.y, f.w, f.h, dx, dy, size, size);
+      const octx = pal.foodTint ? this.getTintCtx(size) : null;
+      if (pal.foodTint && octx && this.tintCanvas) {
+        // Teñir el sprite en el offscreen: dibujar la fruta y superponer el
+        // color de la skin solo donde el sprite es opaco (source-atop). Se
+        // conserva la silueta y el sombreado del sprite; el tono se desplaza
+        // hacia el acento de la skin.
+        octx.clearRect(0, 0, size, size);
+        octx.globalCompositeOperation = "source-over";
+        octx.globalAlpha = 1;
+        octx.drawImage(this.image, f.x, f.y, f.w, f.h, 0, 0, size, size);
+        octx.globalCompositeOperation = "source-atop";
+        octx.globalAlpha = pal.foodTintAlpha;
+        octx.fillStyle = pal.foodTint;
+        octx.fillRect(0, 0, size, size);
+        octx.globalCompositeOperation = "source-over";
+        octx.globalAlpha = 1;
+        ctx.drawImage(this.tintCanvas, dx, dy);
+      } else {
+        ctx.drawImage(this.image, f.x, f.y, f.w, f.h, dx, dy, size, size);
+      }
     } else {
       // Respaldo mientras carga fruits.png: rombo de color plano.
-      ctx.fillStyle = "#ff4d6d";
+      ctx.fillStyle = pal.foodFallback;
       ctx.beginPath();
       ctx.moveTo(dx + size / 2, dy);
       ctx.lineTo(dx + size, dy + size / 2);

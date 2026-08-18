@@ -5,7 +5,11 @@
 // specs/09-juego-snake.md): un único canvas cuadrado 800x800.
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { SnakeEngine, type SnakeState } from "@/lib/games/snake/engine";
+import {
+  SnakeEngine,
+  type SnakePalette,
+  type SnakeState,
+} from "@/lib/games/snake/engine";
 
 export interface SnakeCanvasHandle {
   restart: () => void;
@@ -13,11 +17,12 @@ export interface SnakeCanvasHandle {
 
 interface SnakeCanvasProps {
   paused: boolean;
+  palette: SnakePalette;
   onStateChange: (state: SnakeState) => void;
 }
 
 const SnakeCanvas = forwardRef<SnakeCanvasHandle, SnakeCanvasProps>(
-  function SnakeCanvas({ paused, onStateChange }, ref) {
+  function SnakeCanvas({ paused, palette, onStateChange }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<SnakeEngine | null>(null);
 
@@ -29,13 +34,24 @@ const SnakeCanvas = forwardRef<SnakeCanvasHandle, SnakeCanvasProps>(
       onStateChangeRef.current = onStateChange;
     }, [onStateChange]);
 
+    // La paleta inicial se pasa por ref para no reiniciar el motor cuando
+    // cambia el skin; los cambios se aplican en caliente vía setPalette abajo.
+    const paletteRef = useRef(palette);
+    useEffect(() => {
+      paletteRef.current = palette;
+    }, [palette]);
+
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const engine = new SnakeEngine(canvas, {
-        onStateChange: (state) => onStateChangeRef.current(state),
-      });
+      const engine = new SnakeEngine(
+        canvas,
+        {
+          onStateChange: (state) => onStateChangeRef.current(state),
+        },
+        paletteRef.current
+      );
       engineRef.current = engine;
       engine.start();
 
@@ -44,6 +60,11 @@ const SnakeCanvas = forwardRef<SnakeCanvasHandle, SnakeCanvasProps>(
         engineRef.current = null;
       };
     }, []);
+
+    // Cambio de skin en caliente sin remontar el motor ni reiniciar la partida.
+    useEffect(() => {
+      engineRef.current?.setPalette(palette);
+    }, [palette]);
 
     useEffect(() => {
       const engine = engineRef.current;

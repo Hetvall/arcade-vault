@@ -20,6 +20,12 @@ import SnakeCanvas, {
   type SnakeCanvasHandle,
 } from "@/components/games/snake-canvas";
 import type { SnakeState } from "@/lib/games/snake/engine";
+import { resolveAsteroidsPalette } from "@/lib/games/asteroids/skins";
+import { resolveTetrisPalette } from "@/lib/games/tetris/skins";
+import { resolveArkanoidPalette } from "@/lib/games/arkanoid/skins";
+import { resolveSnakePalette } from "@/lib/games/snake/skins";
+import SkinPicker from "@/components/skin-picker";
+import { getStoredSkin, SKINNABLE_GAMES, type SkinId } from "@/lib/skins";
 
 // Juegos con motor real (ver specs/05-juego-asteroides.md,
 // specs/07-juego-tetris.md, specs/08-juego-arkanoid.md y
@@ -44,6 +50,15 @@ export default function GamePlayer({ game }: { game: Game }) {
   const [tripleShotSecondsLeft, setTripleShotSecondsLeft] = useState(0);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
+  // Skin del juego (persistido por juego en localStorage, ver lib/skins.ts).
+  // Arranca en "classic" para coincidir con el render de servidor; el
+  // SkinPicker lo sincroniza tras montar.
+  const [skin, setSkin] = useState<SkinId>(() => getStoredSkin(game.id));
+  const asteroidsPalette = resolveAsteroidsPalette(skin);
+  const tetrisPalette = resolveTetrisPalette(skin);
+  const arkanoidPalette = resolveArkanoidPalette(skin);
+  const snakePalette = resolveSnakePalette(skin);
+  const showSkinPicker = SKINNABLE_GAMES.has(game.id);
   // "INVITADO" por defecto: coincide con el primer render en servidor y
   // cliente (el usuario real de localStorage todavía no está disponible).
   const [name, setName] = useState("INVITADO");
@@ -151,7 +166,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   };
 
   return (
-    <div className="av-player fade-in">
+    <div className="av-player fade-in" data-skin={skin}>
       <div className="player-hud">
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           <div className="hud-stat">
@@ -201,6 +216,13 @@ export default function GamePlayer({ game }: { game: Game }) {
             SALIR
           </button>
         </div>
+        {showSkinPicker && (
+          <SkinPicker
+            gameId={game.id}
+            gameTitle={game.title}
+            onChange={setSkin}
+          />
+        )}
       </div>
 
       <div className="crt">
@@ -209,24 +231,28 @@ export default function GamePlayer({ game }: { game: Game }) {
             <AsteroidsCanvas
               ref={asteroidsRef}
               paused={paused || over}
+              palette={asteroidsPalette}
               onStateChange={handleAsteroidsStateChange}
             />
           ) : isTetris ? (
             <TetrisCanvas
               ref={tetrisRef}
               paused={paused || over}
+              palette={tetrisPalette}
               onStateChange={handleTetrisStateChange}
             />
           ) : isArkanoid ? (
             <ArkanoidCanvas
               ref={arkanoidRef}
               paused={paused || over}
+              palette={arkanoidPalette}
               onStateChange={handleArkanoidStateChange}
             />
           ) : isSnake ? (
             <SnakeCanvas
               ref={snakeRef}
               paused={paused || over}
+              palette={snakePalette}
               onStateChange={handleSnakeStateChange}
             />
           ) : (

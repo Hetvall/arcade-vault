@@ -46,6 +46,31 @@ migrations itself. Use it (`/add-game <carpeta-de-referencia-o-descripción>`) i
 freehanding a new game spec. Reference engines to port live in `references/started-games/`
 (currently `02-asteroids`, `03-tetris`, `04-arkanoid`).
 
+### Agents (`.claude/agents/`)
+
+Subagents that plan/design but never touch app code, specs-in-progress, or migrations themselves
+— each hands off a concrete next step (a recommendation, spec files, or a Draft spec) for a human
+or another skill to act on:
+
+- **`game-planner`** (`model: opus`) — runs **before** `/add-game`; decides _which_ game to add
+  next (not how to port it). Reads the Supabase catalog (`references/implemented-games.md`),
+  `HAS_REAL_ENGINE`, and unconsumed sources in `references/started-games/`, then recommends one
+  game with justification (catalog placeholders first, thin categories like VERSUS/PUZZLE
+  weighted higher). Keeps a persistent, git-tracked memory of past suggestions in
+  `references/game-suggestions.md` (a checklist) so it never repeats a recommendation. Output:
+  "run `/add-game <id>`" for the user to act on.
+- **`game-jam`** — given a theme, invents one original arcade game (engine built from scratch,
+  Snake-style, not a 1:1 port) and writes **2 self-contained spec options** (design + technical in
+  one file each) to `specs/game-jam/<id>/<enfoque-a>.md` / `<enfoque-b>.md`, each named after its
+  own approach, for a human to review and pick one.
+- **`skin-designer`** — audits that every game with a real engine (`asteroids`, `tetris`,
+  `arkanoid`, `snake`) has at least 3 skins (neon, retro, clásico/default) that read well in the
+  app's fixed dark mode, and **implements directly** (no approval gate) the palette-injection
+  seam (engine → canvas → game-player) plus a **per-game** skin selector with independent
+  persistence per game. Runs `npm run lint`/`build` to self-verify. Keeps coverage memory in
+  `references/skin-coverage.md` and leaves `specs/skins/sistema-de-skins.md` as `Implemented`
+  documentation of the work done, not a Draft awaiting `/spec-impl`.
+
 ## Current state
 
 Implemented specs (`specs/01`–`09`, all `Implemented` except where noted):

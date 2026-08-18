@@ -6,6 +6,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import {
   AsteroidsEngine,
+  type AsteroidsPalette,
   type AsteroidsState,
 } from "@/lib/games/asteroids/engine";
 
@@ -15,11 +16,12 @@ export interface AsteroidsCanvasHandle {
 
 interface AsteroidsCanvasProps {
   paused: boolean;
+  palette: AsteroidsPalette;
   onStateChange: (state: AsteroidsState) => void;
 }
 
 const AsteroidsCanvas = forwardRef<AsteroidsCanvasHandle, AsteroidsCanvasProps>(
-  function AsteroidsCanvas({ paused, onStateChange }, ref) {
+  function AsteroidsCanvas({ paused, palette, onStateChange }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<AsteroidsEngine | null>(null);
 
@@ -31,13 +33,24 @@ const AsteroidsCanvas = forwardRef<AsteroidsCanvasHandle, AsteroidsCanvasProps>(
       onStateChangeRef.current = onStateChange;
     }, [onStateChange]);
 
+    // La paleta inicial se pasa por ref para no reiniciar el motor cuando
+    // cambia el skin; los cambios se aplican en caliente vía setPalette abajo.
+    const paletteRef = useRef(palette);
+    useEffect(() => {
+      paletteRef.current = palette;
+    }, [palette]);
+
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const engine = new AsteroidsEngine(canvas, {
-        onStateChange: (state) => onStateChangeRef.current(state),
-      });
+      const engine = new AsteroidsEngine(
+        canvas,
+        {
+          onStateChange: (state) => onStateChangeRef.current(state),
+        },
+        paletteRef.current
+      );
       engineRef.current = engine;
       engine.start();
 
@@ -46,6 +59,12 @@ const AsteroidsCanvas = forwardRef<AsteroidsCanvasHandle, AsteroidsCanvasProps>(
         engineRef.current = null;
       };
     }, []);
+
+    // Cambio de skin en caliente sin remmontar el motor ni reiniciar la
+    // partida.
+    useEffect(() => {
+      engineRef.current?.setPalette(palette);
+    }, [palette]);
 
     useEffect(() => {
       const engine = engineRef.current;

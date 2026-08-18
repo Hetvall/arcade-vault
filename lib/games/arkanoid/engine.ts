@@ -57,6 +57,48 @@ const BASE_BALL_VY = -300;
 type BlockColor =
   "red" | "yellow" | "cyan" | "magenta" | "hotpink" | "green" | "gray";
 
+// ── Contrato de skin ────────────────────────────────────────────────────────
+// Arkanoid es sprite-based: todo (paleta, pelota, bloques, explosiones) se
+// dibuja desde `spritesheet-breakout.png`, así que una skin de solo color no
+// basta. El contrato soporta dos modos:
+//   - `useSprites: true` (clásico) → se dibujan los sprites tal cual, sin
+//     teñir: réplica 1:1 del look original. Los campos de color se ignoran.
+//   - `useSprites: false` (neón/retro) → cada sprite se tiñe: se usa su canal
+//     alfa como máscara (globalCompositeOperation "source-in") y se rellena
+//     con el color del rol, conservando la silueta del sprite pero cambiando
+//     su color. `glow` añade shadowBlur para el bloom neón/fósforo.
+// Los bloques mantienen su diferenciación por fila remapeando cada BlockColor
+// original a un color de la skin (Record<BlockColor, string>).
+export interface ArkanoidPalette {
+  background: string; // fondo del canvas
+  paddle: string; // tinte de la paleta (raqueta)
+  ball: string; // tinte de la pelota
+  blocks: Record<BlockColor, string>; // tinte por color de bloque original
+  useSprites: boolean; // true = sprites sin teñir (clásico); false = teñidos
+  glow: number; // shadowBlur aplicado a cada sprite (0 = sin brillo)
+}
+
+// Skin "clásico": réplica 1:1 del look original (fondo negro, sprites del
+// spritesheet sin teñir). Es el default y nunca debe reinventarse. Los colores
+// declarados son solo de referencia/fallback: con `useSprites: true` no se
+// aplican, el dibujo usa directamente el spritesheet.
+export const CLASSIC_ARKANOID_PALETTE: ArkanoidPalette = {
+  background: "#000000",
+  paddle: "#c0c0c0",
+  ball: "#ffffff",
+  blocks: {
+    red: "#ff0000",
+    yellow: "#ffff00",
+    cyan: "#00ffff",
+    magenta: "#ff00ff",
+    hotpink: "#ff69b4",
+    green: "#00ff00",
+    gray: "#808080",
+  },
+  useSprites: true,
+  glow: 0,
+};
+
 interface Paddle {
   x: number;
   y: number;
@@ -271,17 +313,29 @@ export class ArkanoidEngine {
   private ssImg: HTMLCanvasElement | null = null;
   private ssLoaded = false;
 
+  // Paleta de skin inyectada por el constructor (ver ArkanoidPalette). Se puede
+  // cambiar en caliente con setPalette sin reiniciar la partida.
+  private palette: ArkanoidPalette;
+  // Canvas de trabajo reutilizado para teñir sprites (modo no-clásico).
+  private tintCanvas: HTMLCanvasElement | null = null;
+  private tintCtx: CanvasRenderingContext2D | null = null;
+
   private started = false;
   private destroyed = false;
   private paused = false;
   private lastTime: number | null = null;
   private rafId: number | null = null;
 
-  constructor(canvas: HTMLCanvasElement, callbacks: ArkanoidCallbacks) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    callbacks: ArkanoidCallbacks,
+    palette: ArkanoidPalette = CLASSIC_ARKANOID_PALETTE
+  ) {
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("No se pudo obtener el contexto 2D del canvas.");
     this.ctx = ctx;
     this.callbacks = callbacks;
+    this.palette = palette;
 
     this.bounceSound = new Audio("/games/arkanoid/ball-bounce.mp3");
     this.breakSound = new Audio("/games/arkanoid/break-sound.mp3");
@@ -307,6 +361,14 @@ export class ArkanoidEngine {
 
   resume() {
     this.paused = false;
+  }
+
+  // Cambia la skin en caliente. El siguiente frame ya dibuja con la nueva
+  // paleta; si el juego está en pausa (sin redibujar), repinta una vez para
+  // reflejar el cambio de inmediato.
+  setPalette(palette: ArkanoidPalette) {
+    this.palette = palette;
+    if (this.started && this.paused) this.draw();
   }
 
   restart() {
@@ -361,25 +423,72 @@ export class ArkanoidEngine {
     rawImg.src = "/games/arkanoid/spritesheet-breakout.png";
   }
 
+  // Dibuja un frame del spritesheet. Si `tint` es null (skin clásico) lo copia
+  // tal cual; si trae color (neón/retro) tiñe el sprite usando su alfa como
+  // máscara (source-in), conservando la silueta pero cambiando el color, más un
+  // shadowBlur opcional para el bloom.
   private drawFrame(
     frame: SpriteRect,
     x: number,
     y: number,
     w: number,
-    h: number
+    h: number,
+    tint: string | null = null
   ) {
     if (!this.ssLoaded || !this.ssImg) return;
-    this.ctx.drawImage(
+    const ctx = this.ctx;
+
+    if (!tint) {
+      ctx.drawImage(
+        this.ssImg,
+        frame.sx,
+        frame.sy,
+        frame.sw,
+        frame.sh,
+        x,
+        y,
+        w,
+        h
+      );
+      return;
+    }
+
+    if (!this.tintCanvas) {
+      this.tintCanvas = document.createElement("canvas");
+      this.tintCtx = this.tintCanvas.getContext("2d");
+    }
+    const tc = this.tintCanvas;
+    const tctx = this.tintCtx;
+    if (!tctx) return;
+
+    tc.width = frame.sw;
+    tc.height = frame.sh;
+    tctx.clearRect(0, 0, frame.sw, frame.sh);
+    tctx.globalCompositeOperation = "source-over";
+    tctx.drawImage(
       this.ssImg,
       frame.sx,
       frame.sy,
       frame.sw,
       frame.sh,
-      x,
-      y,
-      w,
-      h
+      0,
+      0,
+      frame.sw,
+      frame.sh
     );
+    // Rellena solo donde el sprite tiene alfa: silueta teñida.
+    tctx.globalCompositeOperation = "source-in";
+    tctx.fillStyle = tint;
+    tctx.fillRect(0, 0, frame.sw, frame.sh);
+    tctx.globalCompositeOperation = "source-over";
+
+    const glow = this.palette.glow;
+    if (glow > 0) {
+      ctx.shadowBlur = glow;
+      ctx.shadowColor = tint;
+    }
+    ctx.drawImage(tc, 0, 0, frame.sw, frame.sh, x, y, w, h);
+    ctx.shadowBlur = 0;
   }
 
   private drawBlockSprite(
@@ -389,7 +498,8 @@ export class ArkanoidEngine {
     w: number,
     h: number
   ) {
-    this.drawFrame(SPRITES.blocks[color], x, y, w, h);
+    const tint = this.palette.useSprites ? null : this.palette.blocks[color];
+    this.drawFrame(SPRITES.blocks[color], x, y, w, h, tint);
   }
 
   // ── Ciclo de vida de la partida ─────────────────────────────────────────
@@ -535,7 +645,9 @@ export class ArkanoidEngine {
   // con su propio HUD/modal (ver specs/08-juego-arkanoid.md).
   private draw() {
     const ctx = this.ctx;
-    ctx.fillStyle = "#000";
+    const palette = this.palette;
+    const sprites = palette.useSprites;
+    ctx.fillStyle = palette.background;
     ctx.fillRect(0, 0, W, H);
 
     for (const block of this.blocks) {
@@ -553,7 +665,8 @@ export class ArkanoidEngine {
         exp.x,
         exp.y,
         exp.w,
-        exp.h
+        exp.h,
+        sprites ? null : palette.blocks[exp.color]
       );
     }
 
@@ -562,14 +675,16 @@ export class ArkanoidEngine {
       this.paddle.x,
       this.paddle.y,
       this.paddle.w,
-      this.paddle.h
+      this.paddle.h,
+      sprites ? null : palette.paddle
     );
     this.drawFrame(
       SPRITES.ball,
       this.ball.x,
       this.ball.y,
       this.ball.w,
-      this.ball.h
+      this.ball.h,
+      sprites ? null : palette.ball
     );
   }
 
