@@ -31,6 +31,22 @@ export interface TetrisCallbacks {
   onStateChange: (state: TetrisState) => void;
 }
 
+// ── Contrato de skin ────────────────────────────────────────────────────────
+// Paleta inyectada por el constructor y consumida por los métodos draw* en
+// lugar de literales de color. `blocks` es un array indexado igual que el
+// antiguo COLORS (índice 0 = celda vacía, 1..7 = las 7 piezas, 8 = tuerca
+// deshabilitada) para que el sorteo por tipo de pieza siga funcionando 1:1.
+// `background` puede ser null para no pintar fondo y dejar ver el CRT detrás
+// (comportamiento clásico original, que solo hacía clearRect). `glow` es el
+// shadowBlur aplicado a los bloques (0 = sin brillo, como el look clásico).
+export interface TetrisPalette {
+  background: string | null; // relleno tras clear; null = transparente
+  grid: string; // color de las líneas de la rejilla
+  blockHighlight: string; // franja de brillo superior de cada bloque
+  blocks: (string | null)[]; // color por índice de pieza (0 = vacío)
+  glow: number; // shadowBlur de los bloques; 0 = sin brillo
+}
+
 const COLS = 10;
 const ROWS = 20;
 const BLOCK = 30;
@@ -46,6 +62,17 @@ const COLORS = [
   "#ffb74d", // L - orange
   "#9e9e9e", // N - tuerca (gris metálico)
 ];
+
+// Skin "clásico": réplica 1:1 del look original hardcodeado del engine
+// (bloques del array COLORS, brillo blanco a 0.12, rejilla = --line #0a0a0f
+// cian tenue, sin fondo propio, sin glow). Es el default y nunca se reinventa.
+export const CLASSIC_TETRIS_PALETTE: TetrisPalette = {
+  background: null,
+  grid: "rgba(0, 245, 255, 0.18)", // = --line en app/globals.css
+  blockHighlight: "rgba(255,255,255,0.12)",
+  blocks: COLORS,
+  glow: 0,
+};
 
 const PIECES: (number[][] | null)[] = [
   null,
@@ -104,6 +131,7 @@ export class TetrisEngine {
   private ctx: CanvasRenderingContext2D;
   private nextCtx: CanvasRenderingContext2D;
   private callbacks: TetrisCallbacks;
+  private palette: TetrisPalette;
 
   private board!: number[][];
   private current!: Piece;
@@ -122,7 +150,8 @@ export class TetrisEngine {
   constructor(
     canvas: HTMLCanvasElement,
     nextCanvas: HTMLCanvasElement,
-    callbacks: TetrisCallbacks
+    callbacks: TetrisCallbacks,
+    palette: TetrisPalette = CLASSIC_TETRIS_PALETTE
   ) {
     const ctx = canvas.getContext("2d");
     const nextCtx = nextCanvas.getContext("2d");
@@ -131,10 +160,19 @@ export class TetrisEngine {
     this.ctx = ctx;
     this.nextCtx = nextCtx;
     this.callbacks = callbacks;
+    this.palette = palette;
 
     window.addEventListener("keydown", this.onKeyDown);
 
     this.initGame();
+  }
+
+  // Cambia la paleta en caliente (cambio de skin sin recrear el motor ni
+  // reiniciar la partida). El siguiente frame ya se dibuja con ella; la
+  // preview de la siguiente pieza se redibuja de inmediato.
+  setPalette(palette: TetrisPalette) {
+    this.palette = palette;
+    this.drawNext();
   }
 
   start() {
@@ -361,20 +399,24 @@ export class TetrisEngine {
     alpha?: number
   ) {
     if (!colorIndex) return;
-    const color = COLORS[colorIndex];
+    const color = this.palette.blocks[colorIndex];
+    if (!color) return;
     context.globalAlpha = alpha ?? 1;
-    context.fillStyle = color as string;
+    if (this.palette.glow > 0) {
+      context.shadowBlur = this.palette.glow;
+      context.shadowColor = color;
+    }
+    context.fillStyle = color;
     context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+    context.shadowBlur = 0;
     // highlight
-    context.fillStyle = "rgba(255,255,255,0.12)";
+    context.fillStyle = this.palette.blockHighlight;
     context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
     context.globalAlpha = 1;
   }
 
   private drawGrid() {
-    this.ctx.strokeStyle = getComputedStyle(document.body)
-      .getPropertyValue("--line")
-      .trim();
+    this.ctx.strokeStyle = this.palette.grid;
     this.ctx.lineWidth = 0.5;
     for (let c = 1; c < COLS; c++) {
       this.ctx.beginPath();
@@ -393,6 +435,12 @@ export class TetrisEngine {
   private draw() {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, COLS * BLOCK, ROWS * BLOCK);
+    // Fondo propio de la skin (clásico = null: se deja ver el CRT detrás,
+    // como el original que solo hacía clearRect).
+    if (this.palette.background) {
+      ctx.fillStyle = this.palette.background;
+      ctx.fillRect(0, 0, COLS * BLOCK, ROWS * BLOCK);
+    }
     this.drawGrid();
 
     // board
@@ -430,6 +478,10 @@ export class TetrisEngine {
     const NB = 30;
     const nextCtx = this.nextCtx;
     nextCtx.clearRect(0, 0, 120, 120);
+    if (this.palette.background) {
+      nextCtx.fillStyle = this.palette.background;
+      nextCtx.fillRect(0, 0, 120, 120);
+    }
     const shape = this.next.shape;
     const offX = Math.floor((4 - shape[0].length) / 2);
     const offY = Math.floor((4 - shape.length) / 2);

@@ -7,6 +7,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import {
   ArkanoidEngine,
+  type ArkanoidPalette,
   type ArkanoidState,
 } from "@/lib/games/arkanoid/engine";
 
@@ -16,11 +17,12 @@ export interface ArkanoidCanvasHandle {
 
 interface ArkanoidCanvasProps {
   paused: boolean;
+  palette: ArkanoidPalette;
   onStateChange: (state: ArkanoidState) => void;
 }
 
 const ArkanoidCanvas = forwardRef<ArkanoidCanvasHandle, ArkanoidCanvasProps>(
-  function ArkanoidCanvas({ paused, onStateChange }, ref) {
+  function ArkanoidCanvas({ paused, palette, onStateChange }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<ArkanoidEngine | null>(null);
 
@@ -32,13 +34,24 @@ const ArkanoidCanvas = forwardRef<ArkanoidCanvasHandle, ArkanoidCanvasProps>(
       onStateChangeRef.current = onStateChange;
     }, [onStateChange]);
 
+    // La paleta inicial se pasa por ref para no reiniciar el motor cuando
+    // cambia el skin; los cambios se aplican en caliente vía setPalette abajo.
+    const paletteRef = useRef(palette);
+    useEffect(() => {
+      paletteRef.current = palette;
+    }, [palette]);
+
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const engine = new ArkanoidEngine(canvas, {
-        onStateChange: (state) => onStateChangeRef.current(state),
-      });
+      const engine = new ArkanoidEngine(
+        canvas,
+        {
+          onStateChange: (state) => onStateChangeRef.current(state),
+        },
+        paletteRef.current
+      );
       engineRef.current = engine;
       engine.start();
 
@@ -47,6 +60,12 @@ const ArkanoidCanvas = forwardRef<ArkanoidCanvasHandle, ArkanoidCanvasProps>(
         engineRef.current = null;
       };
     }, []);
+
+    // Cambio de skin en caliente sin remontar el motor ni reiniciar la
+    // partida.
+    useEffect(() => {
+      engineRef.current?.setPalette(palette);
+    }, [palette]);
 
     useEffect(() => {
       const engine = engineRef.current;

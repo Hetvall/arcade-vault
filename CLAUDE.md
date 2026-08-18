@@ -65,9 +65,11 @@ or another skill to act on:
   own approach, for a human to review and pick one.
 - **`skin-designer`** — audits that every game with a real engine (`asteroids`, `tetris`,
   `arkanoid`, `snake`) has at least 3 skins (neon, retro, clásico/default) that read well in the
-  app's fixed dark mode, and designs the palette-injection seam (engine → canvas → game-player)
-  plus a **per-game** skin selector with independent persistence per game. Keeps coverage memory
-  in `references/skin-coverage.md` and hands off a Draft spec for `/spec-impl`.
+  app's fixed dark mode, and **implements directly** (no approval gate) the palette-injection
+  seam (engine → canvas → game-player) plus a **per-game** skin selector with independent
+  persistence per game. Runs `npm run lint`/`build` to self-verify. Keeps coverage memory in
+  `references/skin-coverage.md` and leaves `specs/skins/sistema-de-skins.md` as `Implemented`
+  documentation of the work done, not a Draft awaiting `/spec-impl`.
 
 ## Current state
 

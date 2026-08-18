@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import SkinPicker from "@/components/skin-picker";
+import { SKINNABLE_GAMES } from "@/lib/skins";
 import { createClient } from "@/lib/supabase/server";
 import {
   fetchBestScore,
@@ -69,6 +71,9 @@ export default async function GameDetailPage({
               </div>
             </div>
           </div>
+          {SKINNABLE_GAMES.has(game.id) && (
+            <SkinPicker gameId={game.id} gameTitle={game.title} />
+          )}
           <div className="detail-actions">
             <Link href={`/game/${game.id}/play`} className="btn xl pulse">
               ▶ JUGAR AHORA

@@ -6,7 +6,11 @@
 // de siguiente pieza) que usa Tetris.
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { TetrisEngine, type TetrisState } from "@/lib/games/tetris/engine";
+import {
+  TetrisEngine,
+  type TetrisPalette,
+  type TetrisState,
+} from "@/lib/games/tetris/engine";
 
 export interface TetrisCanvasHandle {
   restart: () => void;
@@ -14,11 +18,12 @@ export interface TetrisCanvasHandle {
 
 interface TetrisCanvasProps {
   paused: boolean;
+  palette: TetrisPalette;
   onStateChange: (state: TetrisState) => void;
 }
 
 const TetrisCanvas = forwardRef<TetrisCanvasHandle, TetrisCanvasProps>(
-  function TetrisCanvas({ paused, onStateChange }, ref) {
+  function TetrisCanvas({ paused, palette, onStateChange }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const nextCanvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<TetrisEngine | null>(null);
@@ -31,14 +36,26 @@ const TetrisCanvas = forwardRef<TetrisCanvasHandle, TetrisCanvasProps>(
       onStateChangeRef.current = onStateChange;
     }, [onStateChange]);
 
+    // La paleta inicial se pasa por ref para no reiniciar el motor cuando
+    // cambia el skin; los cambios se aplican en caliente vía setPalette abajo.
+    const paletteRef = useRef(palette);
+    useEffect(() => {
+      paletteRef.current = palette;
+    }, [palette]);
+
     useEffect(() => {
       const canvas = canvasRef.current;
       const nextCanvas = nextCanvasRef.current;
       if (!canvas || !nextCanvas) return;
 
-      const engine = new TetrisEngine(canvas, nextCanvas, {
-        onStateChange: (state) => onStateChangeRef.current(state),
-      });
+      const engine = new TetrisEngine(
+        canvas,
+        nextCanvas,
+        {
+          onStateChange: (state) => onStateChangeRef.current(state),
+        },
+        paletteRef.current
+      );
       engineRef.current = engine;
       engine.start();
 
@@ -47,6 +64,12 @@ const TetrisCanvas = forwardRef<TetrisCanvasHandle, TetrisCanvasProps>(
         engineRef.current = null;
       };
     }, []);
+
+    // Cambio de skin en caliente sin remmontar el motor ni reiniciar la
+    // partida.
+    useEffect(() => {
+      engineRef.current?.setPalette(palette);
+    }, [palette]);
 
     useEffect(() => {
       const engine = engineRef.current;

@@ -1251,6 +1251,79 @@ body
   width: 100%;
   height: 100%;
   display: block;
+  transition: box-shadow 0.25s ease;
+}
+
+/* Marco del canvas forkeado por skin vía [data-skin] en .av-player. El engine
+   ya pinta las entidades con la paleta correcta; esto solo tiñe el halo del
+   marco para reforzar el ambiente de cada skin. */
+.av-player[data-skin="neon"] .asteroids-canvas {
+  box-shadow:
+    inset 0 0 40px rgba(0, 245, 255, 0.12),
+    0 0 24px rgba(255, 0, 110, 0.15);
+}
+.av-player[data-skin="retro"] .asteroids-canvas {
+  box-shadow: inset 0 0 48px rgba(255, 176, 0, 0.14);
+}
+.av-player[data-skin="neon"] .arkanoid-canvas {
+  box-shadow:
+    inset 0 0 40px rgba(0, 245, 255, 0.12),
+    0 0 24px rgba(255, 0, 110, 0.15);
+}
+.av-player[data-skin="retro"] .arkanoid-canvas {
+  box-shadow: inset 0 0 48px rgba(255, 176, 0, 0.14);
+}
+
+/* Selector de skin por juego (components/skin-picker.tsx). Deja explícito
+   sobre qué juego actúa mostrando su título. */
+.skin-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-2);
+}
+.skin-picker-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+.skin-picker-label strong {
+  color: var(--ink);
+}
+.skin-picker-options {
+  display: inline-flex;
+  gap: 6px;
+}
+.skin-chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--ink-dim);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.skin-chip:hover {
+  color: var(--ink);
+  border-color: var(--cyan);
+}
+.skin-chip.active {
+  color: var(--bg);
+  background: var(--cyan);
+  border-color: var(--cyan);
+  box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
 }
 
 /* Arkanoid: canvas de resolución lógica fija 800x600 escalado por CSS
@@ -1300,6 +1373,34 @@ body
   box-shadow: 0 0 8px rgba(255, 0, 110, 0.3);
 }
 
+/* Marco del canvas de Tetris (tablero + preview) forkeado por skin vía
+   [data-skin] en .av-player. El engine ya pinta las piezas con la paleta
+   correcta; esto solo tiñe el halo del marco para reforzar el ambiente de
+   cada skin. Clásico usa el magenta de arriba; neón vira a cian, retro a
+   ámbar. */
+.av-player[data-skin="neon"] .tetris-canvas {
+  border-color: rgba(0, 245, 255, 0.7);
+  box-shadow:
+    0 0 12px rgba(0, 245, 255, 0.55),
+    0 0 28px rgba(0, 245, 255, 0.25),
+    inset 0 0 14px rgba(0, 245, 255, 0.12);
+}
+.av-player[data-skin="neon"] .tetris-next-canvas {
+  border-color: rgba(0, 245, 255, 0.45);
+  box-shadow: 0 0 8px rgba(0, 245, 255, 0.3);
+}
+.av-player[data-skin="retro"] .tetris-canvas {
+  border-color: rgba(255, 176, 0, 0.7);
+  box-shadow:
+    0 0 12px rgba(255, 176, 0, 0.5),
+    0 0 28px rgba(255, 176, 0, 0.2),
+    inset 0 0 14px rgba(255, 176, 0, 0.12);
+}
+.av-player[data-skin="retro"] .tetris-next-canvas {
+  border-color: rgba(255, 176, 0, 0.45);
+  box-shadow: 0 0 8px rgba(255, 176, 0, 0.3);
+}
+
 /* Snake: tablero cuadrado de resolución lógica fija 800x800 (20x20 celdas de
    40px, ver lib/games/snake/engine.ts), se escala por altura manteniendo su
    proporción 1:1 y se centra horizontalmente dentro del .crt-screen 4:3,
@@ -1320,6 +1421,25 @@ body
     0 0 12px rgba(0, 255, 128, 0.55),
     0 0 28px rgba(0, 255, 128, 0.25),
     inset 0 0 14px rgba(0, 255, 128, 0.12);
+}
+
+/* Marco del canvas de Snake forkeado por skin vía [data-skin] en .av-player.
+   El engine ya pinta las entidades con la paleta correcta; esto solo tiñe el
+   marco para reforzar el ambiente de cada skin. Clásico usa el verde de arriba;
+   neón vira a cian/magenta, retro a ámbar. */
+.av-player[data-skin="neon"] .snake-canvas {
+  border-color: rgba(0, 245, 255, 0.7);
+  box-shadow:
+    0 0 12px rgba(0, 245, 255, 0.5),
+    0 0 28px rgba(255, 0, 110, 0.2),
+    inset 0 0 14px rgba(0, 245, 255, 0.12);
+}
+.av-player[data-skin="retro"] .snake-canvas {
+  border-color: rgba(255, 176, 0, 0.7);
+  box-shadow:
+    0 0 12px rgba(255, 176, 0, 0.5),
+    0 0 28px rgba(255, 176, 0, 0.2),
+    inset 0 0 14px rgba(255, 176, 0, 0.12);
 }
 
 /* fake in-screen game */
