@@ -48,9 +48,10 @@ freehanding a new game spec. Reference engines to port live in `references/start
 
 ### Agents (`.claude/agents/`)
 
-Subagents that plan/design but never touch app code, specs-in-progress, or migrations themselves
-— each hands off a concrete next step (a recommendation, spec files, or a Draft spec) for a human
-or another skill to act on:
+Subagents that plan/design and, for a couple of them, implement directly — but never touch
+migrations themselves. Most hand off a concrete next step (a recommendation, spec files, or a
+Draft spec) for a human or another skill to act on; the implementer agents apply code changes
+autonomously and leave `Implemented` documentation instead:
 
 - **`game-planner`** (`model: opus`) — runs **before** `/add-game`; decides _which_ game to add
   next (not how to port it). Reads the Supabase catalog (`references/implemented-games.md`),
@@ -70,6 +71,14 @@ or another skill to act on:
   persistence per game. Runs `npm run lint`/`build` to self-verify. Keeps coverage memory in
   `references/skin-coverage.md` and leaves `specs/skins/sistema-de-skins.md` as `Implemented`
   documentation of the work done, not a Draft awaiting `/spec-impl`.
+- **`mobile-porter`** — audits that the app reads well on both touch/mobile and desktop/web,
+  across the 4 real-engine games (canvas + HUD + touch controls, per SPEC 10) and every site page
+  (home, library, game detail, leaderboard, login, about, nav), and **implements directly** (no
+  approval gate) the CSS/layout fixes — consolidating the scattered breakpoints in
+  `app/globals.css`, always behind `@media (max-width: ...)`/`@media (pointer: coarse)` so desktop
+  stays unchanged. Never touches game mechanics/engines or migrations. Runs `npm run lint`/`build`
+  to self-verify. Keeps coverage memory in `references/mobile-coverage.md` and leaves
+  `specs/mobile/revision-responsive.md` as `Implemented` documentation of the work done.
 
 ## Current state
 
