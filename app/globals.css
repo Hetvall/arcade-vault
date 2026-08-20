@@ -350,6 +350,16 @@ body
   }
 }
 
+/* Navbar del sitio oculto durante la partida en móvil (spec 10, ampliación
+   de alcance): solo en pointer: coarse, para maximizar el espacio vertical
+   disponible para canvas + controles táctiles. En desktop (pointer: fine)
+   .av-nav-playing no tiene efecto — el navbar se comporta igual que hoy. */
+@media (pointer: coarse) {
+  .av-nav.av-nav-playing {
+    display: none;
+  }
+}
+
 .av-mobile-panel {
   position: fixed;
   inset: 0 0 0 auto;
@@ -1326,6 +1336,23 @@ body
   box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
 }
 
+/* <select> compacto (spec 10, ampliación de alcance): equivalente a los
+   chips de arriba, oculto por defecto — solo se muestra en viewports
+   angostos, donde reemplaza a los chips para no competir en altura con el
+   canvas del juego (ver .player-hud dentro del breakpoint 720px). */
+.skin-picker-select {
+  display: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--cyan);
+  background: var(--bg-2);
+  color: var(--ink);
+}
+
 /* Arkanoid: canvas de resolución lógica fija 800x600 escalado por CSS
    dentro de .crt-screen (que ya mantiene aspect-ratio 4/3), mismo patrón
    que .asteroids-canvas. */
@@ -1440,6 +1467,115 @@ body
     0 0 12px rgba(255, 176, 0, 0.5),
     0 0 28px rgba(255, 176, 0, 0.2),
     inset 0 0 14px rgba(255, 176, 0, 0.12);
+}
+
+/* ===== touch controls (spec 10) =====
+   Tarjeta hermana de .av-player, no overlay sobre el canvas: se renderiza
+   debajo del reproductor y solo se monta en dispositivos táctiles (ver
+   useIsTouchDevice en game-player.tsx). Mismo lenguaje visual que .crt-screen
+   (borde neón verde, fondo oscuro) para leerse como una "consola" propia. */
+.touch-controls {
+  max-width: 1100px;
+  margin: 0 auto 32px;
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  border-radius: 20px;
+  background: #050507;
+  border: 1px solid rgba(0, 255, 136, 0.35);
+  box-shadow:
+    0 0 0 1px rgba(0, 255, 136, 0.12),
+    0 0 24px rgba(0, 255, 136, 0.15),
+    inset 0 0 20px rgba(0, 0, 0, 0.6);
+}
+
+.touch-controls button {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--pixel);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--green);
+  background: var(--bg-2);
+  border: 1px solid rgba(0, 255, 136, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.2);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 0.1s ease,
+    box-shadow 0.1s ease,
+    transform 0.1s ease;
+}
+
+.touch-controls button:active {
+  background: rgba(0, 255, 136, 0.22);
+  box-shadow: 0 0 16px rgba(0, 255, 136, 0.5);
+  transform: scale(0.94);
+}
+
+/* D-pad: rejilla 3x3, cada botón se ubica por área nombrada. dpad-4 (snake)
+   usa las 4 direcciones; dpad-3 (tetris/asteroids) omite la fila/columna que
+   no aplica; dpad-2 (arkanoid) es solo izquierda/derecha en una fila. */
+.dpad {
+  display: grid;
+  grid-template-areas:
+    ".    up    ."
+    "left  .   right"
+    ".   down   .";
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(3, 52px);
+  gap: 6px;
+}
+
+.dpad-2 {
+  grid-template-areas: "left right";
+  grid-template-columns: repeat(2, 52px);
+  grid-template-rows: 52px;
+}
+
+.dpad-up {
+  grid-area: up;
+}
+.dpad-down {
+  grid-area: down;
+}
+.dpad-left {
+  grid-area: left;
+}
+.dpad-right {
+  grid-area: right;
+}
+
+.touch-controls-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.action-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  font-size: 20px;
+}
+
+.action-btn-fire {
+  color: var(--magenta);
+  border-color: rgba(255, 0, 110, 0.5);
+  box-shadow: 0 0 8px rgba(255, 0, 110, 0.25);
+}
+
+.action-btn-fire:active {
+  background: rgba(255, 0, 110, 0.22);
+  box-shadow: 0 0 16px rgba(255, 0, 110, 0.5);
 }
 
 /* fake in-screen game */
@@ -2024,6 +2160,47 @@ body
 
   .av-player {
     padding: 0 16px 32px;
+  }
+
+  /* HUD compacto en móvil (spec 10, ampliación de alcance): menos padding,
+     stats más pequeños, y PAUSA/FIN/SALIR + skin picker en una sola barra
+     apretada en vez de dos filas sueltas, para no competir en altura con el
+     canvas del juego. */
+  .player-hud {
+    padding: 10px 12px;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .hud-stat .v {
+    font-size: 13px;
+  }
+
+  .hud-actions {
+    gap: 8px;
+  }
+
+  .hud-actions .btn {
+    padding: 8px 12px;
+    font-size: 9px;
+  }
+
+  .skin-picker {
+    margin-top: 8px;
+    padding-top: 8px;
+    gap: 8px;
+  }
+
+  .skin-picker-label {
+    display: none;
+  }
+
+  .skin-picker-options {
+    display: none;
+  }
+
+  .skin-picker-select {
+    display: block;
   }
 }
 

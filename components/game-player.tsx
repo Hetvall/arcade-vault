@@ -26,6 +26,25 @@ import { resolveArkanoidPalette } from "@/lib/games/arkanoid/skins";
 import { resolveSnakePalette } from "@/lib/games/snake/skins";
 import SkinPicker from "@/components/skin-picker";
 import { getStoredSkin, SKINNABLE_GAMES, type SkinId } from "@/lib/skins";
+import TouchControls from "@/components/games/touch-controls";
+
+// Detección de dispositivo táctil (spec 10): basada en "(pointer: coarse)",
+// reevaluada en cliente tras montar para no romper el render de servidor
+// (SSR asume "false" — sin controles táctiles — y el cliente lo corrige tras
+// el primer efecto). Un dispositivo táctil con teclado externo sigue
+// mostrando el overlay: ambos inputs conviven, ninguno excluye al otro.
+function useIsTouchDevice() {
+  const [isTouch, setIsTouch] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsTouch(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsTouch(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isTouch;
+}
 
 // Juegos con motor real (ver specs/05-juego-asteroides.md,
 // specs/07-juego-tetris.md, specs/08-juego-arkanoid.md y
@@ -70,6 +89,19 @@ export default function GamePlayer({ game }: { game: Game }) {
   const tetrisRef = useRef<TetrisCanvasHandle>(null);
   const arkanoidRef = useRef<ArkanoidCanvasHandle>(null);
   const snakeRef = useRef<SnakeCanvasHandle>(null);
+
+  const isTouchDevice = useIsTouchDevice();
+
+  // Auto-scroll al canvas en desktop (fuera de spec 10, fix rápido pedido
+  // aparte): al entrar a un juego el HUD superior puede dejar el canvas
+  // fuera del viewport, haciendo perder partida por no verlo a tiempo. Solo
+  // en pointer: fine — en táctil el layout ya deja el canvas visible de
+  // entrada. Se ejecuta una sola vez al montar.
+  const crtRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+    crtRef.current?.scrollIntoView({ block: "center" });
+  }, []);
 
   // Puntaje simulado, solo para los juegos que todavía no tienen motor real.
   useEffect(() => {
@@ -166,195 +198,229 @@ export default function GamePlayer({ game }: { game: Game }) {
   };
 
   return (
-    <div className="av-player fade-in" data-skin={skin}>
-      <div className="player-hud">
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-          <div className="hud-stat">
-            <div className="l">Jugador</div>
-            <div className="v" style={{ color: "var(--ink)" }}>
-              {name}
-            </div>
-          </div>
-          <div className="hud-stat">
-            <div className="l">Puntuación</div>
-            <div className="v">{score.toLocaleString("es-ES")}</div>
-          </div>
-          <div className="hud-stat lives">
-            <div className="l">
-              {isTetris ? "Líneas" : isSnake ? "Longitud" : "Vidas"}
-            </div>
-            <div className="v">
-              {isTetris
-                ? lines
-                : isSnake
-                  ? length
-                  : "♥ ".repeat(lives).trim() || "—"}
-            </div>
-          </div>
-          <div className="hud-stat level">
-            <div className="l">Nivel</div>
-            <div className="v">{String(displayLevel).padStart(2, "0")}</div>
-          </div>
-          {isAsteroids && tripleShotSecondsLeft > 0 && (
+    <>
+      <div className="av-player fade-in" data-skin={skin}>
+        <div className="player-hud">
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
             <div className="hud-stat">
-              <div className="l">3X</div>
-              <div className="v">{tripleShotSecondsLeft.toFixed(1)}s</div>
+              <div className="l">Jugador</div>
+              <div className="v" style={{ color: "var(--ink)" }}>
+                {name}
+              </div>
             </div>
+            <div className="hud-stat">
+              <div className="l">Puntuación</div>
+              <div className="v">{score.toLocaleString("es-ES")}</div>
+            </div>
+            <div className="hud-stat lives">
+              <div className="l">
+                {isTetris ? "Líneas" : isSnake ? "Longitud" : "Vidas"}
+              </div>
+              <div className="v">
+                {isTetris
+                  ? lines
+                  : isSnake
+                    ? length
+                    : "♥ ".repeat(lives).trim() || "—"}
+              </div>
+            </div>
+            <div className="hud-stat level">
+              <div className="l">Nivel</div>
+              <div className="v">{String(displayLevel).padStart(2, "0")}</div>
+            </div>
+            {isAsteroids && tripleShotSecondsLeft > 0 && (
+              <div className="hud-stat">
+                <div className="l">3X</div>
+                <div className="v">{tripleShotSecondsLeft.toFixed(1)}s</div>
+              </div>
+            )}
+          </div>
+          <div className="hud-actions">
+            <button className="btn yellow" onClick={() => setPaused((p) => !p)}>
+              {paused ? "REANUDAR" : "PAUSA"}
+            </button>
+            <button className="btn magenta" onClick={endGame}>
+              FIN
+            </button>
+            <button
+              className="btn ghost"
+              onClick={() => router.push(`/game/${game.id}`)}
+            >
+              SALIR
+            </button>
+          </div>
+          {showSkinPicker && (
+            <SkinPicker
+              gameId={game.id}
+              gameTitle={game.title}
+              onChange={setSkin}
+            />
           )}
         </div>
-        <div className="hud-actions">
-          <button className="btn yellow" onClick={() => setPaused((p) => !p)}>
-            {paused ? "REANUDAR" : "PAUSA"}
-          </button>
-          <button className="btn magenta" onClick={endGame}>
-            FIN
-          </button>
-          <button
-            className="btn ghost"
-            onClick={() => router.push(`/game/${game.id}`)}
-          >
-            SALIR
-          </button>
+
+        <div className="crt" ref={crtRef}>
+          <div className="crt-screen">
+            {isAsteroids ? (
+              <AsteroidsCanvas
+                ref={asteroidsRef}
+                paused={paused || over}
+                palette={asteroidsPalette}
+                onStateChange={handleAsteroidsStateChange}
+              />
+            ) : isTetris ? (
+              <TetrisCanvas
+                ref={tetrisRef}
+                paused={paused || over}
+                palette={tetrisPalette}
+                onStateChange={handleTetrisStateChange}
+              />
+            ) : isArkanoid ? (
+              <ArkanoidCanvas
+                ref={arkanoidRef}
+                paused={paused || over}
+                palette={arkanoidPalette}
+                onStateChange={handleArkanoidStateChange}
+              />
+            ) : isSnake ? (
+              <SnakeCanvas
+                ref={snakeRef}
+                paused={paused || over}
+                palette={snakePalette}
+                onStateChange={handleSnakeStateChange}
+              />
+            ) : (
+              <div className="game-arena">
+                <div className="grid-floor"></div>
+                <div className="enemy e1"></div>
+                <div className="enemy e2"></div>
+                <div className="enemy e3"></div>
+                <div className="player-ship"></div>
+              </div>
+            )}
+            {paused && (
+              <div
+                className="crt-content"
+                style={{ background: "rgba(0,0,0,0.6)", zIndex: 5 }}
+              >
+                <div>
+                  <div className="pixel neon-yellow" style={{ fontSize: 22 }}>
+                    EN PAUSA
+                  </div>
+                  <div
+                    className="mono"
+                    style={{
+                      fontSize: 11,
+                      color: "var(--ink-dim)",
+                      marginTop: 10,
+                      letterSpacing: "0.16em",
+                    }}
+                  >
+                    PULSA REANUDAR PARA CONTINUAR
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="crt-bottom">
+            <span className="led">SEÑAL OK</span>
+            <span>{game.title} · CRT-83 · 60 HZ</span>
+            <span>CARGA · 1MB</span>
+          </div>
         </div>
-        {showSkinPicker && (
-          <SkinPicker
-            gameId={game.id}
-            gameTitle={game.title}
-            onChange={setSkin}
-          />
+
+        {over && (
+          <div className="modal-bd">
+            <div className="modal">
+              <h2>FIN DEL JUEGO</h2>
+              <div className="final-label">PUNTUACIÓN FINAL</div>
+              <div className="final">{score.toLocaleString("es-ES")}</div>
+              {!saved ? (
+                <div className="input-row">
+                  <input
+                    value={name}
+                    onChange={(e) =>
+                      setName(e.target.value.toUpperCase().slice(0, 10))
+                    }
+                    placeholder="TUS INICIALES"
+                    disabled={saving}
+                  />
+                  <button
+                    className="btn yellow"
+                    disabled={saving}
+                    onClick={async () => {
+                      setSaving(true);
+                      setSaveError(false);
+                      const { ok } = await saveScore({
+                        game: game.id,
+                        score,
+                        name,
+                      });
+                      setSaving(false);
+                      if (ok) {
+                        setSaved(true);
+                      } else {
+                        setSaveError(true);
+                      }
+                    }}
+                  >
+                    {saving ? "GUARDANDO…" : "GUARDAR PUNTUACIÓN"}
+                  </button>
+                  {saveError && (
+                    <div className="toast-error">
+                      ▸ NO SE PUDO GUARDAR — REINTENTAR
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
+              )}
+              <div className="actions">
+                <button className="btn" onClick={restart}>
+                  JUGAR DE NUEVO
+                </button>
+                <button
+                  className="btn magenta"
+                  onClick={() => router.push("/games")}
+                >
+                  VOLVER AL VAULT
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
-
-      <div className="crt">
-        <div className="crt-screen">
-          {isAsteroids ? (
-            <AsteroidsCanvas
-              ref={asteroidsRef}
-              paused={paused || over}
-              palette={asteroidsPalette}
-              onStateChange={handleAsteroidsStateChange}
+      {isTouchDevice && (
+        <>
+          {isAsteroids && (
+            <TouchControls
+              layout="asteroids"
+              onKey={(code, pressed) =>
+                asteroidsRef.current?.setKey(code, pressed)
+              }
             />
-          ) : isTetris ? (
-            <TetrisCanvas
-              ref={tetrisRef}
-              paused={paused || over}
-              palette={tetrisPalette}
-              onStateChange={handleTetrisStateChange}
-            />
-          ) : isArkanoid ? (
-            <ArkanoidCanvas
-              ref={arkanoidRef}
-              paused={paused || over}
-              palette={arkanoidPalette}
-              onStateChange={handleArkanoidStateChange}
-            />
-          ) : isSnake ? (
-            <SnakeCanvas
-              ref={snakeRef}
-              paused={paused || over}
-              palette={snakePalette}
-              onStateChange={handleSnakeStateChange}
-            />
-          ) : (
-            <div className="game-arena">
-              <div className="grid-floor"></div>
-              <div className="enemy e1"></div>
-              <div className="enemy e2"></div>
-              <div className="enemy e3"></div>
-              <div className="player-ship"></div>
-            </div>
           )}
-          {paused && (
-            <div
-              className="crt-content"
-              style={{ background: "rgba(0,0,0,0.6)", zIndex: 5 }}
-            >
-              <div>
-                <div className="pixel neon-yellow" style={{ fontSize: 22 }}>
-                  EN PAUSA
-                </div>
-                <div
-                  className="mono"
-                  style={{
-                    fontSize: 11,
-                    color: "var(--ink-dim)",
-                    marginTop: 10,
-                    letterSpacing: "0.16em",
-                  }}
-                >
-                  PULSA REANUDAR PARA CONTINUAR
-                </div>
-              </div>
-            </div>
+          {isTetris && (
+            <TouchControls
+              layout="tetris"
+              onKey={(code) => tetrisRef.current?.pressKey(code)}
+            />
           )}
-        </div>
-        <div className="crt-bottom">
-          <span className="led">SEÑAL OK</span>
-          <span>{game.title} · CRT-83 · 60 HZ</span>
-          <span>CARGA · 1MB</span>
-        </div>
-      </div>
-
-      {over && (
-        <div className="modal-bd">
-          <div className="modal">
-            <h2>FIN DEL JUEGO</h2>
-            <div className="final-label">PUNTUACIÓN FINAL</div>
-            <div className="final">{score.toLocaleString("es-ES")}</div>
-            {!saved ? (
-              <div className="input-row">
-                <input
-                  value={name}
-                  onChange={(e) =>
-                    setName(e.target.value.toUpperCase().slice(0, 10))
-                  }
-                  placeholder="TUS INICIALES"
-                  disabled={saving}
-                />
-                <button
-                  className="btn yellow"
-                  disabled={saving}
-                  onClick={async () => {
-                    setSaving(true);
-                    setSaveError(false);
-                    const { ok } = await saveScore({
-                      game: game.id,
-                      score,
-                      name,
-                    });
-                    setSaving(false);
-                    if (ok) {
-                      setSaved(true);
-                    } else {
-                      setSaveError(true);
-                    }
-                  }}
-                >
-                  {saving ? "GUARDANDO…" : "GUARDAR PUNTUACIÓN"}
-                </button>
-                {saveError && (
-                  <div className="toast-error">
-                    ▸ NO SE PUDO GUARDAR — REINTENTAR
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
-            )}
-            <div className="actions">
-              <button className="btn" onClick={restart}>
-                JUGAR DE NUEVO
-              </button>
-              <button
-                className="btn magenta"
-                onClick={() => router.push("/games")}
-              >
-                VOLVER AL VAULT
-              </button>
-            </div>
-          </div>
-        </div>
+          {isArkanoid && (
+            <TouchControls
+              layout="arkanoid"
+              onKey={(code, pressed) =>
+                arkanoidRef.current?.setKey(code, pressed)
+              }
+            />
+          )}
+          {isSnake && (
+            <TouchControls
+              layout="snake"
+              onKey={(code) => snakeRef.current?.pressKey(code)}
+            />
+          )}
+        </>
       )}
-    </div>
+    </>
   );
 }

@@ -12,6 +12,7 @@ import {
 
 export interface AsteroidsCanvasHandle {
   restart: () => void;
+  setKey: (code: string, pressed: boolean) => void;
 }
 
 interface AsteroidsCanvasProps {
@@ -76,6 +77,9 @@ const AsteroidsCanvas = forwardRef<AsteroidsCanvasHandle, AsteroidsCanvasProps>(
     useImperativeHandle(ref, () => ({
       restart: () => {
         engineRef.current?.restart();
+      },
+      setKey: (code, pressed) => {
+        engineRef.current?.setKey(code, pressed);
       },
     }));
 

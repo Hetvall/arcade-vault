@@ -227,8 +227,17 @@ export class TetrisEngine {
       this.togglePause();
       return;
     }
+    this.handleAction(e.code);
+  };
+
+  // Seam de input sintético (spec 10): reutilizado por el listener real de
+  // teclado (onKeyDown) y por pressKey (controles táctiles). No incluye
+  // KeyP/pausa (fuera de alcance de este spec, sigue siendo exclusivo de
+  // teclado). El guard de paused/gameOver se preserva intacto porque vive
+  // dentro de esta función compartida.
+  private handleAction(code: string) {
     if (this.paused || this.gameOver) return;
-    switch (e.code) {
+    switch (code) {
       case "ArrowLeft":
         if (
           !this.collide(this.current.shape, this.current.x - 1, this.current.y)
@@ -252,7 +261,13 @@ export class TetrisEngine {
         this.hardDrop();
         break;
     }
-  };
+  }
+
+  // Controles táctiles (spec 10): una pulsación = una acción, igual que el
+  // teclado en modo discreto.
+  pressKey(code: string) {
+    this.handleAction(code);
+  }
 
   // ── Ciclo de vida de la partida ─────────────────────────────────────────
   private initGame() {

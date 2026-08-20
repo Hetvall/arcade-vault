@@ -272,7 +272,17 @@ export class SnakeEngine {
     if (this.paused || this.gameOver) return;
     if (SnakeEngine.GAME_KEYS.has(e.code)) e.preventDefault();
 
-    switch (e.code) {
+    this.handleAction(e.code);
+  };
+
+  // Seam de input sintético (spec 10): reutilizado por el listener real de
+  // teclado (onKeyDown) y por pressKey (controles táctiles). El guard de
+  // paused/gameOver ya lo aplica onKeyDown antes de llamar aquí; pressKey
+  // lo repite para que el táctil respete la misma regla sin pasar por el
+  // listener de teclado.
+  private handleAction(code: string) {
+    if (this.paused || this.gameOver) return;
+    switch (code) {
       case "ArrowUp":
       case "KeyW":
         this.queueDirection(DIR_UP);
@@ -290,7 +300,14 @@ export class SnakeEngine {
         this.queueDirection(DIR_RIGHT);
         break;
     }
-  };
+  }
+
+  // Controles táctiles (spec 10): una pulsación = una acción (cambia la
+  // dirección encolada); la serpiente sigue avanzando sola en el próximo
+  // tick, igual que con el teclado.
+  pressKey(code: string) {
+    this.handleAction(code);
+  }
 
   // ── Simulación ────────────────────────────────────────────────────────
   private tick() {
