@@ -20,6 +20,7 @@ import SnakeCanvas, {
   type SnakeCanvasHandle,
 } from "@/components/games/snake-canvas";
 import type { SnakeState } from "@/lib/games/snake/engine";
+import FroggerGame from "@/components/games/FroggerGame";
 import { resolveAsteroidsPalette } from "@/lib/games/asteroids/skins";
 import { resolveTetrisPalette } from "@/lib/games/tetris/skins";
 import { resolveArkanoidPalette } from "@/lib/games/arkanoid/skins";
@@ -47,10 +48,16 @@ function useIsTouchDevice() {
 }
 
 // Juegos con motor real (ver specs/05-juego-asteroides.md,
-// specs/07-juego-tetris.md, specs/08-juego-arkanoid.md y
-// specs/09-juego-snake.md). El resto del catálogo sigue con la arena
-// placeholder + puntaje simulado.
-const HAS_REAL_ENGINE = new Set(["asteroids", "tetris", "arkanoid", "snake"]);
+// specs/07-juego-tetris.md, specs/08-juego-arkanoid.md,
+// specs/09-juego-snake.md y specs/game-jam/frogger/01-frogger-core.md). El
+// resto del catálogo sigue con la arena placeholder + puntaje simulado.
+const HAS_REAL_ENGINE = new Set([
+  "asteroids",
+  "tetris",
+  "arkanoid",
+  "snake",
+  "frogger",
+]);
 
 export default function GamePlayer({ game }: { game: Game }) {
   const router = useRouter();
@@ -59,6 +66,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   const isTetris = game.id === "tetris";
   const isArkanoid = game.id === "arkanoid";
   const isSnake = game.id === "snake";
+  const isFrogger = game.id === "frogger";
   const hasRealEngine = HAS_REAL_ENGINE.has(game.id);
 
   const [score, setScore] = useState(0);
@@ -84,6 +92,10 @@ export default function GamePlayer({ game }: { game: Game }) {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  // FroggerGame no expone un handle imperativo (no tiene restart()/pressKey()
+  // como los demás motores): "JUGAR DE NUEVO" fuerza un remount cambiando
+  // esta key, que reinicia todo su estado interno desde cero.
+  const [frogKey, setFrogKey] = useState(0);
 
   const asteroidsRef = useRef<AsteroidsCanvasHandle>(null);
   const tetrisRef = useRef<TetrisCanvasHandle>(null);
@@ -177,6 +189,25 @@ export default function GamePlayer({ game }: { game: Game }) {
     }
   }, []);
 
+  // Estado real del motor de Frogger (ver components/games/FroggerGame.tsx).
+  // Frogger no reporta un único onStateChange combinado como los demás
+  // motores: expone 4 callbacks separados (score/lives/level/gameOver).
+  // Reutiliza `lives` (cae en la misma rama "Vidas" del HUD que Asteroids y
+  // Arkanoid) y `level`.
+  const handleFroggerScoreChange = useCallback((s: number) => {
+    setScore(s);
+  }, []);
+  const handleFroggerLivesChange = useCallback((l: number) => {
+    setLives(l);
+  }, []);
+  const handleFroggerLevelChange = useCallback((l: number) => {
+    setLevel(l);
+  }, []);
+  const handleFroggerGameOver = useCallback((finalScore: number) => {
+    setScore(finalScore);
+    setOver(true);
+  }, []);
+
   const endGame = () => setOver(true);
   const restart = () => {
     setPaused(false);
@@ -192,6 +223,11 @@ export default function GamePlayer({ game }: { game: Game }) {
       arkanoidRef.current?.restart();
     } else if (isSnake) {
       snakeRef.current?.restart();
+    } else if (isFrogger) {
+      setScore(0);
+      setLives(3);
+      setLevel(1);
+      setFrogKey((k) => k + 1);
     } else {
       setScore(0);
     }
@@ -287,6 +323,15 @@ export default function GamePlayer({ game }: { game: Game }) {
                 paused={paused || over}
                 palette={snakePalette}
                 onStateChange={handleSnakeStateChange}
+              />
+            ) : isFrogger ? (
+              <FroggerGame
+                key={frogKey}
+                paused={paused || over}
+                onScoreChange={handleFroggerScoreChange}
+                onLivesChange={handleFroggerLivesChange}
+                onLevelChange={handleFroggerLevelChange}
+                onGameOver={handleFroggerGameOver}
               />
             ) : (
               <div className="game-arena">
