@@ -319,6 +319,25 @@ export class ArkanoidEngine {
   // Canvas de trabajo reutilizado para teñir sprites (modo no-clásico).
   private tintCanvas: HTMLCanvasElement | null = null;
   private tintCtx: CanvasRenderingContext2D | null = null;
+  // Caché de sprites ya teñidos (y con el glow "horneado" dentro del propio
+  // bitmap) por combinación de frame+tinte+tamaño+glow. Sin esto, cada bloque
+  // vivo (hasta 60 en pantalla) se reteñía desde cero y volvía a pagar
+  // shadowBlur en CADA frame — el cuello de botella real del lag en móvil
+  // (redimensionar un canvas offscreen + recomponer + shadowBlur, 60 veces
+  // por segundo por bloque). El tinte de cada color de bloque es siempre el
+  // mismo mientras no cambie la skin, así que se calcula una sola vez y se
+  // reutiliza el bitmap resultante frame tras frame; setPalette() invalida la
+  // caché al cambiar de skin.
+  private tintedSpriteCache = new Map<
+    string,
+    { canvas: HTMLCanvasElement; pad: number }
+  >();
+
+  // Última emisión de estado enviada a onStateChange, para no re-emitir (y
+  // no forzar un re-render de React) cuando nada cambió respecto al frame
+  // anterior — el loop corre a 60fps pero score/lives/level/gameOver solo
+  // cambian en eventos puntuales.
+  private lastEmitted: ArkanoidState | null = null;
 
   private started = false;
   private destroyed = false;
@@ -368,6 +387,7 @@ export class ArkanoidEngine {
   // reflejar el cambio de inmediato.
   setPalette(palette: ArkanoidPalette) {
     this.palette = palette;
+    this.tintedSpriteCache.clear();
     if (this.started && this.paused) this.draw();
   }
 
@@ -393,12 +413,19 @@ export class ArkanoidEngine {
   // ── Input ─────────────────────────────────────────────────────────────
   private onKeyDown = (e: KeyboardEvent) => {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") e.preventDefault();
-    if (e.key in this.keys) this.keys[e.key as keyof typeof this.keys] = true;
+    this.setKey(e.key, true);
   };
 
   private onKeyUp = (e: KeyboardEvent) => {
-    if (e.key in this.keys) this.keys[e.key as keyof typeof this.keys] = false;
+    this.setKey(e.key, false);
   };
+
+  // Seam de input sintético (spec 10): comparte la misma lógica que el
+  // teclado real, para que los controles táctiles disparen exactamente el
+  // mismo comportamiento (this.keys leído cada frame por update()).
+  setKey(key: string, pressed: boolean) {
+    if (key in this.keys) this.keys[key as keyof typeof this.keys] = pressed;
+  }
 
   // ── Spritesheet ───────────────────────────────────────────────────────
   private loadSpritesheet(cb: () => void) {
@@ -453,42 +480,77 @@ export class ArkanoidEngine {
       return;
     }
 
+    const { canvas, pad } = this.getTintedSprite(frame, w, h, tint);
+    ctx.drawImage(canvas, x - pad, y - pad);
+  }
+
+  // Construye (o recupera de caché) el bitmap ya teñido y, si la skin trae
+  // glow, ya con el shadowBlur "horneado" dentro del propio bitmap (dibujado
+  // una única vez con sombra sobre un canvas con margen `pad`), en vez de
+  // reaplicar shadowBlur — la operación más cara de canvas 2D en móvil — en
+  // cada frame. El tamaño de destino (w, h) es constante por rol (paleta,
+  // pelota, bloque, explosión no cambian de tamaño en partida), así que la
+  // clave de caché cubre todas las combinaciones reales sin crecer sin
+  // límite.
+  private getTintedSprite(
+    frame: SpriteRect,
+    w: number,
+    h: number,
+    tint: string
+  ): { canvas: HTMLCanvasElement; pad: number } {
+    const key = `${frame.sx},${frame.sy},${frame.sw},${frame.sh}|${tint}|${w}x${h}|${this.palette.glow}`;
+    const cached = this.tintedSpriteCache.get(key);
+    if (cached) return cached;
+
     if (!this.tintCanvas) {
       this.tintCanvas = document.createElement("canvas");
       this.tintCtx = this.tintCanvas.getContext("2d");
     }
     const tc = this.tintCanvas;
-    const tctx = this.tintCtx;
-    if (!tctx) return;
+    const tctx = this.tintCtx!;
 
-    tc.width = frame.sw;
-    tc.height = frame.sh;
-    tctx.clearRect(0, 0, frame.sw, frame.sh);
+    tc.width = w;
+    tc.height = h;
+    tctx.clearRect(0, 0, w, h);
     tctx.globalCompositeOperation = "source-over";
     tctx.drawImage(
-      this.ssImg,
+      this.ssImg!,
       frame.sx,
       frame.sy,
       frame.sw,
       frame.sh,
       0,
       0,
-      frame.sw,
-      frame.sh
+      w,
+      h
     );
     // Rellena solo donde el sprite tiene alfa: silueta teñida.
     tctx.globalCompositeOperation = "source-in";
     tctx.fillStyle = tint;
-    tctx.fillRect(0, 0, frame.sw, frame.sh);
+    tctx.fillRect(0, 0, w, h);
     tctx.globalCompositeOperation = "source-over";
 
     const glow = this.palette.glow;
+    let entry: { canvas: HTMLCanvasElement; pad: number };
     if (glow > 0) {
-      ctx.shadowBlur = glow;
-      ctx.shadowColor = tint;
+      const pad = Math.ceil(glow);
+      const big = document.createElement("canvas");
+      big.width = w + pad * 2;
+      big.height = h + pad * 2;
+      const bctx = big.getContext("2d")!;
+      bctx.shadowBlur = glow;
+      bctx.shadowColor = tint;
+      bctx.drawImage(tc, pad, pad);
+      entry = { canvas: big, pad };
+    } else {
+      const small = document.createElement("canvas");
+      small.width = w;
+      small.height = h;
+      small.getContext("2d")!.drawImage(tc, 0, 0);
+      entry = { canvas: small, pad: 0 };
     }
-    ctx.drawImage(tc, 0, 0, frame.sw, frame.sh, x, y, w, h);
-    ctx.shadowBlur = 0;
+    this.tintedSpriteCache.set(key, entry);
+    return entry;
   }
 
   private drawBlockSprite(
@@ -689,12 +751,24 @@ export class ArkanoidEngine {
   }
 
   private emitState() {
-    this.callbacks.onStateChange({
+    const state: ArkanoidState = {
       score: this.score,
       lives: this.lives,
       level: this.currentLevel,
       gameOver: this.gameState === "gameover" || this.gameState === "win",
-    });
+    };
+    const last = this.lastEmitted;
+    if (
+      last &&
+      last.score === state.score &&
+      last.lives === state.lives &&
+      last.level === state.level &&
+      last.gameOver === state.gameOver
+    ) {
+      return;
+    }
+    this.lastEmitted = state;
+    this.callbacks.onStateChange(state);
   }
 
   // ── Loop principal ───────────────────────────────────────────────────

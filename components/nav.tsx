@@ -12,7 +12,7 @@ export default function Nav() {
   const { user, logout } = useSession();
 
   const isActive = (
-    name: "inicio" | "biblioteca" | "salon" | "about" | "auth",
+    name: "inicio" | "biblioteca" | "salon" | "about" | "auth"
   ) => {
     if (name === "inicio") return pathname === "/";
     if (name === "biblioteca")
@@ -21,6 +21,11 @@ export default function Nav() {
     if (name === "about") return pathname === "/about";
     return pathname === "/login";
   };
+
+  // Oculta el navbar del sitio en viewports táctiles mientras se juega
+  // (spec 10, ampliación de alcance): la clase solo tiene efecto vía CSS
+  // @media, así que en desktop (o fuera de /game/[id]/play) no cambia nada.
+  const isPlayingGame = /^\/game\/[^/]+\/play(\/|$)/.test(pathname);
 
   const close = () => setOpen(false);
 
@@ -31,7 +36,7 @@ export default function Nav() {
 
   return (
     <>
-      <nav className="av-nav">
+      <nav className={"av-nav" + (isPlayingGame ? " av-nav-playing" : "")}>
         <Link href="/" className="logo" onClick={close}>
           <div className="logo-mark"></div>
           <div className="logo-text neon-cyan">

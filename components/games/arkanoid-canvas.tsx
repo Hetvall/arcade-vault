@@ -13,6 +13,7 @@ import {
 
 export interface ArkanoidCanvasHandle {
   restart: () => void;
+  setKey: (key: string, pressed: boolean) => void;
 }
 
 interface ArkanoidCanvasProps {
@@ -77,6 +78,9 @@ const ArkanoidCanvas = forwardRef<ArkanoidCanvasHandle, ArkanoidCanvasProps>(
     useImperativeHandle(ref, () => ({
       restart: () => {
         engineRef.current?.restart();
+      },
+      setKey: (key, pressed) => {
+        engineRef.current?.setKey(key, pressed);
       },
     }));
 

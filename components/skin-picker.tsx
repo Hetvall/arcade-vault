@@ -72,6 +72,22 @@ export default function SkinPicker({
           </button>
         ))}
       </div>
+      {/* Equivalente compacto de los chips de arriba: mismo estado, mismo
+          select() — solo cambia de visibilidad por CSS (spec 10, ampliación
+          de alcance) para que el HUD no compita en altura con el canvas en
+          viewports angostos. */}
+      <select
+        className="skin-picker-select"
+        aria-label={`Skin de ${gameTitle}`}
+        value={skin}
+        onChange={(e) => select(e.target.value as SkinId)}
+      >
+        {SKIN_IDS.map((id) => (
+          <option key={id} value={id}>
+            {SKIN_LABELS[id]}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

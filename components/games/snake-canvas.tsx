@@ -13,6 +13,7 @@ import {
 
 export interface SnakeCanvasHandle {
   restart: () => void;
+  pressKey: (code: string) => void;
 }
 
 interface SnakeCanvasProps {
@@ -76,6 +77,9 @@ const SnakeCanvas = forwardRef<SnakeCanvasHandle, SnakeCanvasProps>(
     useImperativeHandle(ref, () => ({
       restart: () => {
         engineRef.current?.restart();
+      },
+      pressKey: (code) => {
+        engineRef.current?.pressKey(code);
       },
     }));
 

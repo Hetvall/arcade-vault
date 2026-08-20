@@ -14,6 +14,7 @@ import {
 
 export interface TetrisCanvasHandle {
   restart: () => void;
+  pressKey: (code: string) => void;
 }
 
 interface TetrisCanvasProps {
@@ -81,6 +82,9 @@ const TetrisCanvas = forwardRef<TetrisCanvasHandle, TetrisCanvasProps>(
     useImperativeHandle(ref, () => ({
       restart: () => {
         engineRef.current?.restart();
+      },
+      pressKey: (code) => {
+        engineRef.current?.pressKey(code);
       },
     }));
 

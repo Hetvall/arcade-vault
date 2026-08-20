@@ -477,13 +477,24 @@ export class AsteroidsEngine {
 
   private onKeyDown = (e: KeyboardEvent) => {
     if (AsteroidsEngine.GAME_KEYS.has(e.code)) e.preventDefault();
-    if (!this.keys[e.code]) this.justPressed[e.code] = true;
-    this.keys[e.code] = true;
+    this.setKey(e.code, true);
   };
 
   private onKeyUp = (e: KeyboardEvent) => {
-    this.keys[e.code] = false;
+    this.setKey(e.code, false);
   };
+
+  // Seam de input sintético (spec 10): comparte la misma lógica que el
+  // teclado real, para que los controles táctiles disparen exactamente el
+  // mismo comportamiento (this.keys leído cada frame por Ship.update/tryShoot).
+  setKey(code: string, pressed: boolean) {
+    if (pressed) {
+      if (!this.keys[code]) this.justPressed[code] = true;
+      this.keys[code] = true;
+    } else {
+      this.keys[code] = false;
+    }
+  }
 
   private pressed(code: string): boolean {
     const val = this.justPressed[code];
