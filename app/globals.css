@@ -907,11 +907,11 @@ body
   text-shadow: 0 0 8px var(--yellow);
 }
 
-.cover-rana {
+.cover-frogger {
   background: linear-gradient(180deg, #001f2a, #0a0a18);
 }
 
-.cover-rana::after {
+.cover-frogger::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1467,6 +1467,28 @@ body
     0 0 12px rgba(255, 176, 0, 0.5),
     0 0 28px rgba(255, 176, 0, 0.2),
     inset 0 0 14px rgba(255, 176, 0, 0.12);
+}
+
+/* Frogger: resolución lógica fija 640x560 (16x14 celdas de 40px, ver
+   components/games/FroggerGame.tsx), se escala por altura manteniendo su
+   proporción 8:7 y se centra horizontalmente dentro del .crt-screen 4:3,
+   mismo enfoque que .snake-canvas. Marco neón verde acorde al color del
+   juego en el catálogo (spec game-jam/frogger/01-frogger-core.md). */
+.frogger-canvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: auto;
+  aspect-ratio: 640 / 560;
+  transform: translateX(-50%);
+  display: block;
+  border: 2px solid rgba(0, 255, 128, 0.7);
+  border-radius: 6px;
+  box-shadow:
+    0 0 12px rgba(0, 255, 128, 0.55),
+    0 0 28px rgba(0, 255, 128, 0.25),
+    inset 0 0 14px rgba(0, 255, 128, 0.12);
 }
 
 /* ===== touch controls (spec 10) =====
