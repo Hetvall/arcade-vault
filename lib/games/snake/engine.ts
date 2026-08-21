@@ -128,6 +128,19 @@ export class SnakeEngine {
   private tintCanvas: HTMLCanvasElement | null = null;
   private tintCtx: CanvasRenderingContext2D | null = null;
 
+  // Sprites de segmento con el glow "horneado" dentro del bitmap (cabeza y
+  // cuerpo). Sin esto, drawSnake() volvía a pagar shadowBlur/shadowColor por
+  // CADA segmento vivo en CADA frame a 60fps — el cuello de botella de
+  // composición. El glow depende solo de la paleta (color+blur), así que se
+  // rasteriza una vez y se reutiliza frame tras frame; setPalette() invalida
+  // la caché. Sigue el modelo de tintedSpriteCache de Arkanoid
+  // (lib/games/arkanoid/engine.ts:322-334).
+  private snakeSprites: {
+    head: HTMLCanvasElement;
+    body: HTMLCanvasElement;
+    pad: number;
+  } | null = null;
+
   private snake!: Vec[];
   private direction!: Vec;
   private queuedDirection!: Vec;
@@ -138,6 +151,11 @@ export class SnakeEngine {
   private length = START_LENGTH;
   private level = 1;
   private gameOver = false;
+
+  // Última emisión enviada a onStateChange, para no re-emitir (y no forzar un
+  // re-render de React) cuando nada cambió respecto al frame anterior. Ver
+  // emitState() y lib/games/arkanoid/engine.ts:340.
+  private lastEmitted: SnakeState | null = null;
 
   private paused = false;
   private lastTime: number | null = null;
@@ -190,6 +208,9 @@ export class SnakeEngine {
   // reiniciar la partida. El próximo frame ya se dibuja con la nueva paleta.
   setPalette(palette: SnakePalette) {
     this.palette = palette;
+    // El glow horneado depende de la paleta: invalidar para que el próximo
+    // frame re-rasterice los sprites de segmento con los nuevos color/blur.
+    this.snakeSprites = null;
   }
 
   destroy() {
@@ -375,16 +396,42 @@ export class SnakeEngine {
     }
   }
 
+  // Rasteriza (una vez por paleta) los sprites de segmento con el glow
+  // horneado. Cada sprite es el rect relleno de siempre (CELL-4 px) dibujado
+  // con shadowColor/shadowBlur en un offscreen; el bitmap incluye el rect y su
+  // halo, con un padding igual al radio de blur para que el halo no se recorte.
+  // El resultado en pantalla es idéntico al fillRect+shadow original, pero el
+  // shadowBlur se paga una sola vez en vez de por segmento y por frame.
+  private getSnakeSprites() {
+    if (this.snakeSprites) return this.snakeSprites;
+    const pal = this.palette;
+    const inner = CELL - 4;
+    const pad = Math.ceil(Math.max(pal.glowHead, pal.glowBody)) + 2;
+    const make = (fill: string, blur: number): HTMLCanvasElement => {
+      const c = document.createElement("canvas");
+      c.width = inner + pad * 2;
+      c.height = inner + pad * 2;
+      const cx = c.getContext("2d")!;
+      cx.fillStyle = fill;
+      cx.shadowColor = pal.snakeGlow;
+      cx.shadowBlur = blur;
+      cx.fillRect(pad, pad, inner, inner);
+      return c;
+    };
+    this.snakeSprites = {
+      head: make(pal.snakeHead, pal.glowHead),
+      body: make(pal.snakeBody, pal.glowBody),
+      pad,
+    };
+    return this.snakeSprites;
+  }
+
   private drawSnake() {
     const ctx = this.ctx;
-    const pal = this.palette;
+    const { head, body, pad } = this.getSnakeSprites();
     this.snake.forEach((seg, i) => {
-      const isHead = i === 0;
-      ctx.fillStyle = isHead ? pal.snakeHead : pal.snakeBody;
-      ctx.shadowColor = pal.snakeGlow;
-      ctx.shadowBlur = isHead ? pal.glowHead : pal.glowBody;
-      ctx.fillRect(seg.x * CELL + 2, seg.y * CELL + 2, CELL - 4, CELL - 4);
-      ctx.shadowBlur = 0;
+      const sprite = i === 0 ? head : body;
+      ctx.drawImage(sprite, seg.x * CELL + 2 - pad, seg.y * CELL + 2 - pad);
     });
   }
 
@@ -450,12 +497,28 @@ export class SnakeEngine {
   }
 
   private emitState() {
-    this.callbacks.onStateChange({
+    const state: SnakeState = {
       score: this.score,
       length: this.length,
       level: this.level,
       gameOver: this.gameOver,
-    });
+    };
+    // Dedupe: el loop corre a 60fps pero score/length/level/gameOver solo
+    // cambian al comer fruta o al perder. Sin esta comparación, onStateChange
+    // dispara un re-render de React 60 veces por segundo aunque nada haya
+    // cambiado. Replica 1:1 el patrón de lib/games/arkanoid/engine.ts:753-772.
+    const last = this.lastEmitted;
+    if (
+      last &&
+      last.score === state.score &&
+      last.length === state.length &&
+      last.level === state.level &&
+      last.gameOver === state.gameOver
+    ) {
+      return;
+    }
+    this.lastEmitted = state;
+    this.callbacks.onStateChange(state);
   }
 
   // ── Loop principal ───────────────────────────────────────────────────

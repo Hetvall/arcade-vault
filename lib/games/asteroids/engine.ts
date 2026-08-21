@@ -124,6 +124,16 @@ class Asteroid {
   rotSpeed: number;
   rot: number;
   verts: [number, number][] = [];
+  // Bitmap del contorno con el glow (shadowBlur) ya "horneado", cacheado por
+  // combinación color+glow de la skin. Los vértices del asteroide son fijos
+  // desde el constructor, así que su silueta+brillo se rasteriza una sola vez
+  // y cada frame se dibuja rotada con drawImage en vez de re-pagar shadowBlur
+  // por asteroide (hasta decenas en pantalla) en cada frame. Mismo modelo que
+  // tintedSpriteCache de lib/games/arkanoid/engine.ts:322. Solo se usa cuando
+  // palette.glow > 0; con glow 0 (clásico) se conserva el trazo vectorial
+  // directo, byte-idéntico al original.
+  private sprite: HTMLCanvasElement | null = null;
+  private spriteKey = "";
 
   constructor(x: number, y: number, size = 3) {
     this.x = x;
@@ -161,15 +171,56 @@ class Asteroid {
     ];
   }
 
+  // Rasteriza el contorno+glow a un canvas offscreen una sola vez por
+  // combinación color+glow. El glow es función solo de la silueta, así que
+  // rotar el bitmap horneado equivale exactamente a re-trazar+re-glow rotado:
+  // el resultado visual es idéntico.
+  private buildSprite(palette: AsteroidsPalette) {
+    const pad = Math.ceil(palette.glow) + 3;
+    const size = Math.ceil(this.radius * 2 + pad * 2);
+    const c = document.createElement("canvas");
+    c.width = size;
+    c.height = size;
+    const cx = c.getContext("2d");
+    if (!cx) return;
+    cx.translate(size / 2, size / 2);
+    cx.strokeStyle = palette.asteroid;
+    cx.shadowBlur = palette.glow;
+    cx.shadowColor = palette.asteroid;
+    cx.lineWidth = 1.5;
+    cx.lineJoin = "round";
+    cx.beginPath();
+    cx.moveTo(this.verts[0][0], this.verts[0][1]);
+    for (let i = 1; i < this.verts.length; i++)
+      cx.lineTo(this.verts[i][0], this.verts[i][1]);
+    cx.closePath();
+    cx.stroke();
+    this.sprite = c;
+    this.spriteKey = `${palette.asteroid}|${palette.glow}`;
+  }
+
   draw(ctx: CanvasRenderingContext2D, palette: AsteroidsPalette) {
+    // Skins con brillo: dibuja el bitmap cacheado (glow horneado) rotado, sin
+    // pagar shadowBlur por asteroide en cada frame.
+    if (palette.glow > 0) {
+      const key = `${palette.asteroid}|${palette.glow}`;
+      if (!this.sprite || this.spriteKey !== key) this.buildSprite(palette);
+      if (this.sprite) {
+        const half = this.sprite.width / 2;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rot);
+        ctx.drawImage(this.sprite, -half, -half);
+        ctx.restore();
+        return;
+      }
+    }
+
+    // Skin clásico (glow 0): trazo vectorial directo, idéntico al original.
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
     ctx.strokeStyle = palette.asteroid;
-    if (palette.glow > 0) {
-      ctx.shadowBlur = palette.glow;
-      ctx.shadowColor = palette.asteroid;
-    }
     ctx.lineWidth = 1.5;
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -413,6 +464,13 @@ export class AsteroidsEngine {
   private lastTime: number | null = null;
   private rafId: number | null = null;
 
+  // Última emisión de estado enviada a onStateChange, para no re-emitir (y no
+  // forzar un re-render de React) cuando nada visible cambió respecto al frame
+  // anterior — el loop corre a 60fps pero score/lives/level/gameOver solo
+  // cambian en eventos puntuales. Mismo patrón que
+  // lib/games/arkanoid/engine.ts:753.
+  private lastEmitted: AsteroidsState | null = null;
+
   constructor(
     canvas: HTMLCanvasElement,
     callbacks: AsteroidsCallbacks,
@@ -527,6 +585,7 @@ export class AsteroidsEngine {
     this.lives = 3;
     this.level = 1;
     this.state = "playing";
+    this.lastEmitted = null;
     this.spawnAsteroids(4);
   }
 
@@ -657,14 +716,32 @@ export class AsteroidsEngine {
   }
 
   private emitState() {
-    this.callbacks.onStateChange({
+    const triple = this.ship.tripleShot > 0 ? this.ship.tripleShot : 0;
+    const state: AsteroidsState = {
       score: this.score,
       lives: this.lives,
       level: this.level,
-      tripleShotSecondsLeft:
-        this.ship.tripleShot > 0 ? this.ship.tripleShot : 0,
+      tripleShotSecondsLeft: triple,
       gameOver: this.state === "gameover",
-    });
+    };
+    // Dedupe: el HUD del reproductor muestra el contador triple con
+    // toFixed(1), así que se compara a resolución de décimas — durante el
+    // power-up se re-emite ~10 veces/s (no 60) y, sin power-up activo (triple
+    // === 0), no se re-emite ningún frame en que score/lives/level/gameOver
+    // no cambien. El valor mostrado es idéntico al anterior.
+    const last = this.lastEmitted;
+    if (
+      last &&
+      last.score === state.score &&
+      last.lives === state.lives &&
+      last.level === state.level &&
+      last.gameOver === state.gameOver &&
+      Math.round(last.tripleShotSecondsLeft * 10) === Math.round(triple * 10)
+    ) {
+      return;
+    }
+    this.lastEmitted = state;
+    this.callbacks.onStateChange(state);
   }
 
   // ── Loop principal ───────────────────────────────────────────────────
