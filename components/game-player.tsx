@@ -115,6 +115,17 @@ export default function GamePlayer({ game }: { game: Game }) {
     crtRef.current?.scrollIntoView({ block: "center" });
   }, []);
 
+  // Marca en <body> que hay una partida activa en pantalla mientras este
+  // componente está montado (spec 11): pausa la animación gridscroll del
+  // fondo compartido para no sumar coste de composición continuo al de
+  // renderizar el juego. Se limpia al desmontar (salir del reproductor).
+  useEffect(() => {
+    document.body.classList.add("av-game-active");
+    return () => {
+      document.body.classList.remove("av-game-active");
+    };
+  }, []);
+
   // Puntaje simulado, solo para los juegos que todavía no tienen motor real.
   useEffect(() => {
     if (hasRealEngine || over || paused) return;

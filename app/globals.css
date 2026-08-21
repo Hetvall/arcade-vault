@@ -123,7 +123,11 @@ a {
 }
 
 .av-bg::after {
-  /* scanlines */
+  /* scanlines. Sin mix-blend-mode: el alpha efectivo aquí ya es ínfimo
+     (0.03 del rgba × 0.6 de opacity ≈ 1.8%), así que sobre el fondo oscuro
+     de la app la composición normal es visualmente indistinguible de
+     "overlay" a esta intensidad, sin forzar recomposición del compositor
+     en cada frame. */
   content: "";
   position: absolute;
   inset: 0;
@@ -132,8 +136,16 @@ a {
     rgba(255, 255, 255, 0.03) 0 1px,
     transparent 1px 3px
   );
-  mix-blend-mode: overlay;
   opacity: 0.6;
+}
+
+/* Mientras hay una partida activa en pantalla (GamePlayer monta el motor de
+   juego), se pausa la animación gridscroll del fondo: es la única capa que
+   se anima de forma continua e infinita sobre todo el viewport, forzando
+   trabajo de composición en cada frame incluso durante el juego. Ver
+   specs/11-rendimiento-frogger.md. */
+body.av-game-active .av-bg::before {
+  animation-play-state: paused;
 }
 
 .av-noise {
@@ -1187,9 +1199,20 @@ body
   box-shadow:
     inset 0 0 60px rgba(0, 0, 0, 0.9),
     inset 0 0 20px rgba(0, 245, 255, 0.15);
+  /* Promueve su propia capa de compositor: envuelve un <canvas> de juego
+     que repinta cada frame más el clip de overflow/border-radius y los
+     pseudo-overlays ::before/::after de scanlines. Sin esto, el navegador
+     puede recomponer todo el subárbol junto en cada frame. Ver
+     specs/11-rendimiento-frogger.md. */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .crt-screen::after {
+  /* Scanlines de rayas negras semitransparentes compuestas en modo normal:
+     con un color de origen negro puro, esto da el mismo resultado visual
+     que mix-blend-mode: multiply (multiplicar por negro == negro), pero sin
+     forzar recomposición del compositor en cada frame sobre el canvas vivo. */
   content: "";
   position: absolute;
   inset: 0;
@@ -1199,7 +1222,6 @@ body
     transparent 2px 4px
   );
   pointer-events: none;
-  mix-blend-mode: multiply;
 }
 
 .crt-screen::before {

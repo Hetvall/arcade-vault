@@ -678,13 +678,19 @@ export default function FroggerGame({
     }
 
     function loop(ts: number) {
+      // En pausa el rAF sigue vivo (para poder reanudar sin recrear el
+      // motor) pero no se avanza el tick ni se redibuja: queda congelado en
+      // el último frame dibujado, igual que Snake/Arkanoid (spec 11).
+      if (pausedRef.current) {
+        rafRef.current = requestAnimationFrame(loop);
+        return;
+      }
+
       if (lastTsRef.current === null) lastTsRef.current = ts;
       const dt = Math.min(50, ts - lastTsRef.current);
       lastTsRef.current = ts;
 
-      if (!pausedRef.current) {
-        update(dt);
-      }
+      update(dt);
       draw();
 
       rafRef.current = requestAnimationFrame(loop);
