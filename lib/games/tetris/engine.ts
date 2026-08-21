@@ -141,6 +141,26 @@ export class TetrisEngine {
   private level = 1;
   private gameOver = false;
 
+  // Última emisión de estado enviada a onStateChange, para no re-emitir (y no
+  // forzar un re-render de React) cuando nada cambió respecto al frame anterior
+  // — el loop corre a 60fps pero score/lines/level/gameOver solo cambian en
+  // eventos puntuales (línea completada, hard/soft drop, game over). Mismo
+  // patrón que lib/games/arkanoid/engine.ts.
+  private lastEmitted: TetrisState | null = null;
+
+  // Caché de bloques ya rasterizados (relleno + franja de brillo + glow
+  // "horneado" dentro del propio bitmap) por combinación de color+tamaño. Sin
+  // esto, cada bloque vivo del tablero (hasta ~200 celdas) volvía a pagar
+  // shadowBlur/shadowColor en CADA frame con las skins neón (glow 6) y retro
+  // (glow 3) — la operación más cara de canvas 2D. El aspecto de cada color es
+  // estable mientras no cambie la skin, así que se calcula una sola vez y se
+  // reutiliza el bitmap frame tras frame; setPalette() invalida la caché.
+  // Mismo modelo que tintedSpriteCache en lib/games/arkanoid/engine.ts.
+  private blockSpriteCache = new Map<
+    string,
+    { canvas: HTMLCanvasElement; pad: number }
+  >();
+
   private paused = false;
   private lastTime: number | null = null;
   private dropAccum = 0;
@@ -172,6 +192,7 @@ export class TetrisEngine {
   // preview de la siguiente pieza se redibuja de inmediato.
   setPalette(palette: TetrisPalette) {
     this.palette = palette;
+    this.blockSpriteCache.clear();
     this.drawNext();
   }
 
@@ -280,6 +301,7 @@ export class TetrisEngine {
     this.dropInterval = 1000;
     this.dropAccum = 0;
     this.lastTime = null;
+    this.lastEmitted = null;
     this.next = this.randomPiece();
     this.spawn();
   }
@@ -414,20 +436,54 @@ export class TetrisEngine {
     alpha?: number
   ) {
     if (!colorIndex) return;
-    const color = this.palette.blocks[colorIndex];
-    if (!color) return;
+    const sprite = this.getBlockSprite(colorIndex, size);
+    if (!sprite) return;
+    const { canvas, pad } = sprite;
+    // El alpha (p. ej. 0.2 del ghost) se aplica al blitear, igual que antes se
+    // aplicaba a los fillRect: multiplica por igual relleno, brillo y glow.
     context.globalAlpha = alpha ?? 1;
-    if (this.palette.glow > 0) {
-      context.shadowBlur = this.palette.glow;
-      context.shadowColor = color;
-    }
-    context.fillStyle = color;
-    context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-    context.shadowBlur = 0;
-    // highlight
-    context.fillStyle = this.palette.blockHighlight;
-    context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+    context.drawImage(canvas, x * size + 1 - pad, y * size + 1 - pad);
     context.globalAlpha = 1;
+  }
+
+  // Devuelve (creando y cacheando una sola vez) el bitmap de un bloque para el
+  // color/tamaño dados, con el brillo y el glow (shadowBlur) ya horneados. El
+  // bloque ocupa (size-2)px como en el draw original; con glow>0 el canvas
+  // lleva un margen `pad = ceil(glow)` para no recortar la sombra, y el blit se
+  // desplaza -pad para que el relleno caiga exactamente en (x*size+1, y*size+1)
+  // como en el código previo. Réplica del modelo tintedSpriteCache de Arkanoid.
+  private getBlockSprite(
+    colorIndex: number,
+    size: number
+  ): { canvas: HTMLCanvasElement; pad: number } | null {
+    const color = this.palette.blocks[colorIndex];
+    if (!color) return null;
+    const key = `${colorIndex}:${size}`;
+    const cached = this.blockSpriteCache.get(key);
+    if (cached) return cached;
+
+    const glow = this.palette.glow;
+    const inner = size - 2;
+    const pad = glow > 0 ? Math.ceil(glow) : 0;
+    const canvas = document.createElement("canvas");
+    canvas.width = inner + pad * 2;
+    canvas.height = inner + pad * 2;
+    const bctx = canvas.getContext("2d")!;
+
+    if (glow > 0) {
+      bctx.shadowBlur = glow;
+      bctx.shadowColor = color;
+    }
+    bctx.fillStyle = color;
+    bctx.fillRect(pad, pad, inner, inner);
+    bctx.shadowBlur = 0;
+    // franja de brillo superior (sin glow, igual que en el draw original)
+    bctx.fillStyle = this.palette.blockHighlight;
+    bctx.fillRect(pad, pad, inner, 4);
+
+    const entry = { canvas, pad };
+    this.blockSpriteCache.set(key, entry);
+    return entry;
   }
 
   private drawGrid() {
@@ -506,12 +562,24 @@ export class TetrisEngine {
   }
 
   private emitState() {
-    this.callbacks.onStateChange({
+    const state: TetrisState = {
       score: this.score,
       lines: this.lines,
       level: this.level,
       gameOver: this.gameOver,
-    });
+    };
+    const last = this.lastEmitted;
+    if (
+      last &&
+      last.score === state.score &&
+      last.lines === state.lines &&
+      last.level === state.level &&
+      last.gameOver === state.gameOver
+    ) {
+      return;
+    }
+    this.lastEmitted = state;
+    this.callbacks.onStateChange(state);
   }
 
   // ── Loop principal ───────────────────────────────────────────────────
