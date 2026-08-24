@@ -1,9 +1,14 @@
 "use client";
 
-// Frogger construido desde cero (canvas puro, sin engine/lib separado — ver
-// Decisions en specs/game-jam/frogger/01-frogger-core.md). Cuadrícula de
-// 16x14 celdas de 40px: fila 0 = bocas destino, filas 1-6 = río, fila 7 =
-// zona segura media, filas 8-12 = carretera, fila 13 = inicio.
+// Frogger construido desde cero (canvas puro). A diferencia de los demás
+// juegos, no está partido en engine.ts + <id>-canvas.tsx: al no ser un port
+// de un game.js externo no hay un motor "puro" que aislar del framework, así
+// que todo vive en este único componente React (ver Decisions en
+// specs/game-jam/frogger/01-frogger-core.md). Vive en lib/games/frogger/ —
+// junto a los demás juegos — solo por convención de ubicación, no porque
+// siga el patrón engine/canvas. Cuadrícula de 16x14 celdas de 40px: fila 0 =
+// bocas destino, filas 1-6 = río, fila 7 = zona segura media, filas 8-12 =
+// carretera, fila 13 = inicio.
 
 import { useCallback, useEffect, useRef } from "react";
 
