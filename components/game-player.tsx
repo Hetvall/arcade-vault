@@ -87,7 +87,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   const snakePalette = resolveSnakePalette(skin);
   const showSkinPicker = SKINNABLE_GAMES.has(game.id);
   // "INVITADO" por defecto: coincide con el primer render en servidor y
-  // cliente (el usuario real de localStorage todavía no está disponible).
+  // cliente (la sesión real de Supabase todavía no está disponible).
   const [name, setName] = useState("INVITADO");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -136,9 +136,9 @@ export default function GamePlayer({ game }: { game: Game }) {
     return () => clearInterval(t);
   }, [hasRealEngine, over, paused]);
 
-  // Precarga las iniciales con el nombre de sesión en cuanto SessionProvider
-  // termina de sincronizarlo desde localStorage (ver el comentario en
-  // session-context.tsx). No pisa lo que el jugador ya haya escrito.
+  // Precarga y bloquea las iniciales con el alias de la sesión real en
+  // cuanto SessionProvider la sincroniza (ver session-context.tsx). El
+  // invitado (sin sesión) sigue pudiendo teclear un nombre libre.
   useEffect(() => {
     if (user) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -398,7 +398,7 @@ export default function GamePlayer({ game }: { game: Game }) {
                       setName(e.target.value.toUpperCase().slice(0, 10))
                     }
                     placeholder="TUS INICIALES"
-                    disabled={saving}
+                    disabled={saving || !!user}
                   />
                   <button
                     className="btn yellow"

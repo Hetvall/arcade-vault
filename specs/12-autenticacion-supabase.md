@@ -131,6 +131,37 @@ de `localStorage`). La tabla `scores` no cambia.
 - **Credenciales OAuth las configura el usuario**: el código (botones + callback) es independiente
   de los secretos, así que el spec no se bloquea por ellas; se documentan como prerrequisito manual.
 
+## Configuración manual del proyecto Supabase (prerrequisito)
+
+Esta configuración se hace a mano en el [dashboard de Supabase](https://supabase.com/dashboard)
+del proyecto `skjiaowautazmyrnrepo` (Authentication → Providers / URL Configuration). El código de
+esta spec (botones, callback, reset) es independiente de estos pasos y no falla si aún no se han
+hecho, pero los flujos correspondientes no funcionarán hasta completarlos:
+
+- [ ] **Confirmación de email ON** — Authentication → Sign In / Providers → Email: dejar activado
+      "Confirm email" (comportamiento por defecto en proyectos nuevos; solo verificar que no esté
+      desactivado).
+- [ ] **Provider Google** — Authentication → Sign In / Providers → Google: crear credenciales OAuth
+      en [Google Cloud Console](https://console.cloud.google.com/apis/credentials) (tipo "Web
+      application"), pegar `Client ID` y `Client Secret` en Supabase, y activar el provider.
+- [ ] **Provider GitHub** — Authentication → Sign In / Providers → GitHub: crear una OAuth App en
+      [GitHub Developer Settings](https://github.com/settings/developers), pegar `Client ID` y
+      `Client Secret` en Supabase, y activar el provider.
+- [ ] **Redirect URLs (Authentication → URL Configuration → Redirect URLs)** — añadir, para dev y
+      prod:
+  - `http://localhost:3000/auth/callback` (dev)
+  - `https://<dominio-de-producción>/auth/callback` (prod)
+- [ ] **Site URL** (Authentication → URL Configuration → Site URL) — apuntar al dominio de
+      producción (o `http://localhost:3000` mientras solo se prueba en dev); Supabase lo usa como
+      fallback cuando `emailRedirectTo`/`redirectTo` no coincide con ninguna Redirect URL permitida.
+- [ ] **Callback URLs en Google/GitHub** — en cada app OAuth creada arriba, registrar como
+      "Authorized redirect URI" (Google) / "Authorization callback URL" (GitHub) la URL de
+      **Supabase**, no la de la app: `https://skjiaowautazmyrnrepo.supabase.co/auth/v1/callback`
+      (Supabase la muestra en la pantalla de cada provider).
+
+`/reset-password` no necesita configuración adicional: reutiliza el mismo callback y las mismas
+Redirect URLs ya listadas arriba.
+
 ## Riesgos identificados
 
 - OAuth no funcionará hasta que el usuario cree las apps en Google/GitHub y configure providers +

@@ -9,23 +9,59 @@ export interface SessionUser {
   name: string;
 }
 
+function normalize(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed.toUpperCase().slice(0, 10) : null;
+}
+
 /**
- * Deriva el alias arcade (`user.name`) de un usuario de Supabase:
- * - Si se registró con email+contraseña, usa el alias elegido en el
- *   registro (`user_metadata.username`).
- * - Si entró por OAuth (Google/GitHub), no hay alias elegido por el
- *   usuario: se deriva del proveedor (`app_metadata.provider`),
- *   normalizado a mayúsculas y truncado a 10 caracteres (p. ej. "GOOGLE",
- *   "GITHUB").
+ * Deriva un alias a partir de un perfil OAuth (`identity_data` de un
+ * proveedor, tal cual lo manda Google/GitHub — sin fusionar con datos de
+ * otro proveedor): usuario de GitHub, nombre de Google/GitHub, y como
+ * último recurso el nombre del proveedor. Usado tanto en el callback de
+ * OAuth (para fijar el alias definitivo en `user_metadata.username` justo
+ * tras el login, ver app/auth/callback/route.ts) como aquí, de respaldo.
+ */
+export function deriveAliasFromProfile(
+  profile: Record<string, unknown> | null | undefined,
+  provider?: string | null
+): string | null {
+  const p = profile ?? {};
+  return (
+    normalize(p.user_name) ??
+    normalize(p.preferred_username) ??
+    normalize(p.full_name) ??
+    normalize(p.name) ??
+    normalize(provider)
+  );
+}
+
+/**
+ * Deriva el alias arcade (`user.name`) de un usuario de Supabase. La fuente
+ * de verdad es siempre `user_metadata.username`:
+ * - Para registro por email+contraseña se fija explícitamente en el signup.
+ * - Para OAuth (Google/GitHub) se fija justo después de cada login, en
+ *   `app/auth/callback/route.ts`, a partir del `identity_data` del
+ *   proveedor con el que se acaba de autenticar (no del `user_metadata` de
+ *   cuenta, que Supabase fusiona entre todos los proveedores enlazados y
+ *   puede arrastrar el alias de un login anterior con otro proveedor).
+ *
+ * Este helper solo necesita leer `username`; el resto de la derivación
+ * (perfil OAuth crudo) es respaldo para el primer render antes de que el
+ * callback termine de escribirlo, o para cuentas antiguas sin ese campo.
  */
 export function userToSession(user: User | null): SessionUser | null {
   if (!user) return null;
 
-  const username = user.user_metadata?.username;
-  if (typeof username === "string" && username.trim().length > 0) {
-    return { name: username };
-  }
+  const username = normalize(user.user_metadata?.username);
+  if (username) return { name: username };
 
-  const provider = user.app_metadata?.provider ?? "usuario";
-  return { name: provider.toUpperCase().slice(0, 10) };
+  const emailLocalPart = user.email?.split("@")[0];
+  const name =
+    deriveAliasFromProfile(user.user_metadata, user.app_metadata?.provider) ??
+    normalize(emailLocalPart) ??
+    "USUARIO";
+
+  return { name };
 }
