@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getStoredUser, setStoredUser, type SessionUser } from "@/lib/session";
+import { userToSession, type SessionUser } from "@/lib/session";
 import { createClient } from "@/lib/supabase/client";
 import { insertScore } from "@/lib/supabase/games";
 
@@ -26,34 +26,41 @@ interface SessionContextValue {
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  // Arranca en null a propósito: en el render de servidor `window` no
-  // existe, y este es el mismo valor que verá el cliente en su primer
-  // render, así que servidor y cliente siempre coinciden (sin mismatch de
-  // hidratación posible). La sesión real de localStorage se sincroniza
-  // justo después de montar.
-  //
-  // Probamos antes un lazy initializer (leer localStorage directamente en
-  // el useState) siguiendo la guía de Next.js sobre "flash before
-  // hydration", pero para un valor compuesto que cambia la cantidad/forma
-  // de nodos renderizados (no solo un texto simple), provocó mismatches
-  // reales de hidratación que `suppressHydrationWarning` no cubre. El
-  // patrón useEffect+setState de abajo es el uso legítimo que la propia
-  // documentación de React reconoce para sincronizar con una API de
-  // navegador no disponible durante el render en servidor.
+  // Arranca en null a propósito: en el render de servidor no hay sesión de
+  // Supabase disponible todavía, y este es el mismo valor que verá el
+  // cliente en su primer render, así que servidor y cliente siempre
+  // coinciden (sin mismatch de hidratación posible). La sesión real se
+  // sincroniza justo después de montar, vía getUser() + onAuthStateChange.
   const [user, setUser] = useState<SessionUser | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setUser(getStoredUser());
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(userToSession(data.user));
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(userToSession(session?.user ?? null));
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = (nextUser: SessionUser) => {
-    setStoredUser(nextUser);
+    // Actualización optimista: el flujo real de autenticación
+    // (signUp/signInWithPassword/signInWithOAuth) vive en app/login/page.tsx
+    // y ya dispara onAuthStateChange, que es quien deja `user` en su valor
+    // definitivo. Esta función se conserva para no romper la firma que
+    // consume la UI de login.
     setUser(nextUser);
   };
 
   const logout = () => {
-    setStoredUser(null);
+    const supabase = createClient();
+    supabase.auth.signOut();
     setUser(null);
   };
 

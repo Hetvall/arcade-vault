@@ -161,7 +161,7 @@ body.av-game-active .av-bg::before {
 body
   > *:not(.av-bg):not(.av-noise):not(.av-mobile-panel):not(
     .av-mobile-backdrop
-  ) {
+  ):not(.av-nav) {
   position: relative;
   z-index: 2;
 }
@@ -340,6 +340,61 @@ body
   margin-left: 16px;
 }
 
+.av-user-menu {
+  position: relative;
+  margin-left: 16px;
+}
+
+.av-user-menu .auth-btn {
+  margin-left: 0;
+}
+
+.av-user-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+}
+
+.av-user-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 60;
+  min-width: 168px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  box-shadow: 0 0 20px rgba(0, 245, 255, 0.14);
+  display: flex;
+  flex-direction: column;
+}
+
+.av-user-dropdown-label {
+  padding: 10px 14px;
+  font-family: var(--pixel);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  text-shadow: 0 0 6px rgba(0, 245, 255, 0.5);
+  border-bottom: 1px dashed var(--line-2);
+}
+
+.av-user-dropdown button {
+  padding: 10px 14px;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color 120ms;
+}
+
+.av-user-dropdown button:hover {
+  color: var(--cyan);
+}
+
 .av-nav .hamburger {
   display: none;
 }
@@ -401,6 +456,28 @@ body
 
 .av-mobile-panel a.active {
   color: var(--cyan);
+}
+
+.av-mobile-user-label {
+  padding: 14px 12px 4px;
+  font-family: var(--pixel);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  text-shadow: 0 0 6px rgba(0, 245, 255, 0.5);
+}
+
+.av-mobile-panel button {
+  padding: 14px 12px;
+  font-family: var(--pixel);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed var(--line-2);
+  text-align: left;
+  cursor: pointer;
 }
 
 .av-mobile-backdrop {

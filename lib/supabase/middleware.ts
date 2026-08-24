@@ -31,7 +31,21 @@ export async function updateSession(request: NextRequest) {
 
   // Refresca la sesión — necesario para que el token se mantenga vigente
   // antes de llegar a Server Components/Route Handlers.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Si ya hay sesión activa, /login no debe mostrarse: al catálogo.
+  if (user && request.nextUrl.pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/games";
+    const response = NextResponse.redirect(url);
+    // Copia las cookies del refresh de sesión para no perder el token renovado.
+    supabaseResponse.cookies
+      .getAll()
+      .forEach((cookie) => response.cookies.set(cookie));
+    return response;
+  }
 
   return supabaseResponse;
 }

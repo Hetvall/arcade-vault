@@ -7,6 +7,7 @@ import { useSession } from "@/context/session-context";
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useSession();
@@ -30,6 +31,7 @@ export default function Nav() {
   const close = () => setOpen(false);
 
   const handleSignOut = () => {
+    setMenuOpen(false);
     logout();
     router.push("/");
   };
@@ -69,9 +71,26 @@ export default function Nav() {
           <span>CRÉDITOS · 03</span>
         </div>
         {user ? (
-          <button className="btn ghost auth-btn" onClick={handleSignOut}>
-            {user.name} ▾
-          </button>
+          <div className="av-user-menu">
+            <button
+              className="btn ghost auth-btn"
+              onClick={() => setMenuOpen((o) => !o)}
+            >
+              {user.name} ▾
+            </button>
+            {menuOpen && (
+              <>
+                <div
+                  className="av-user-backdrop"
+                  onClick={() => setMenuOpen(false)}
+                ></div>
+                <div className="av-user-dropdown">
+                  <div className="av-user-dropdown-label">{user.name}</div>
+                  <button onClick={handleSignOut}>Cerrar sesión</button>
+                </div>
+              </>
+            )}
+          </div>
         ) : (
           <button
             className="btn auth-btn"
@@ -129,15 +148,17 @@ export default function Nav() {
           Acerca de
         </Link>
         {user ? (
-          <button
-            className={isActive("auth") ? "active" : ""}
-            onClick={() => {
-              close();
-              handleSignOut();
-            }}
-          >
-            {user.name} ▾
-          </button>
+          <>
+            <div className="av-mobile-user-label">{user.name}</div>
+            <button
+              onClick={() => {
+                close();
+                handleSignOut();
+              }}
+            >
+              Cerrar sesión
+            </button>
+          </>
         ) : (
           <Link
             href="/login"
