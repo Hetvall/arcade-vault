@@ -20,7 +20,7 @@ import SnakeCanvas, {
   type SnakeCanvasHandle,
 } from "@/components/games/snake-canvas";
 import type { SnakeState } from "@/lib/games/snake/engine";
-import FroggerGame from "@/components/games/FroggerGame";
+import FroggerGame from "@/lib/games/frogger/FroggerGame";
 import { resolveAsteroidsPalette } from "@/lib/games/asteroids/skins";
 import { resolveTetrisPalette } from "@/lib/games/tetris/skins";
 import { resolveArkanoidPalette } from "@/lib/games/arkanoid/skins";
@@ -200,7 +200,7 @@ export default function GamePlayer({ game }: { game: Game }) {
     }
   }, []);
 
-  // Estado real del motor de Frogger (ver components/games/FroggerGame.tsx).
+  // Estado real del motor de Frogger (ver lib/games/frogger/FroggerGame.tsx).
   // Frogger no reporta un único onStateChange combinado como los demás
   // motores: expone 4 callbacks separados (score/lives/level/gameOver).
   // Reutiliza `lives` (cae en la misma rama "Vidas" del HUD que Asteroids y

@@ -40,7 +40,7 @@ Siempre, en este orden:
    - Caché de sprites teñidos con el glow "horneado" (`tintedSpriteCache`, `:322-334`).
 5. Lee el código del juego objetivo: `lib/games/<id>/engine.ts` (motor con clase `<Game>Engine`) o,
    si es un juego tipo game-jam sin ese seam, el componente equivalente
-   (`components/games/<Id>Game.tsx`, como `FroggerGame.tsx`), y su
+   (`lib/games/<id>/<Id>Game.tsx`, como `lib/games/frogger/FroggerGame.tsx`), y su
    `components/games/<id>-canvas.tsx`.
 6. **Regla clave**: no vuelvas a auditar desde cero un patrón que la memoria ya marque `[x]` para
    ese juego, salvo que detectes una regresión real o el usuario lo pida explícitamente. En su
