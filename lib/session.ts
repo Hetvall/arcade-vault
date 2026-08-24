@@ -1,28 +1,31 @@
-// Sesión mock persistida en localStorage, reemplazando el estado que vivía
-// en references/templates/app.jsx ("av_user"). Las puntuaciones ya no se
-// guardan en localStorage: viven en la tabla `scores` de Supabase (ver
-// lib/supabase/games.ts).
+// Sesión real de Supabase Auth. `SessionUser` es una vista mínima del `User`
+// de Supabase; su origen es `supabase.auth` (ver context/session-context.tsx),
+// no localStorage. Las puntuaciones viven en la tabla `scores` de Supabase
+// (ver lib/supabase/games.ts) y no dependen de esta sesión.
+
+import type { User } from "@supabase/supabase-js";
 
 export interface SessionUser {
   name: string;
 }
 
-const USER_KEY = "av_user";
+/**
+ * Deriva el alias arcade (`user.name`) de un usuario de Supabase:
+ * - Si se registró con email+contraseña, usa el alias elegido en el
+ *   registro (`user_metadata.username`).
+ * - Si entró por OAuth (Google/GitHub), no hay alias elegido por el
+ *   usuario: se deriva del proveedor (`app_metadata.provider`),
+ *   normalizado a mayúsculas y truncado a 10 caracteres (p. ej. "GOOGLE",
+ *   "GITHUB").
+ */
+export function userToSession(user: User | null): SessionUser | null {
+  if (!user) return null;
 
-export function getStoredUser(): SessionUser | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return JSON.parse(window.localStorage.getItem(USER_KEY) || "null");
-  } catch {
-    return null;
+  const username = user.user_metadata?.username;
+  if (typeof username === "string" && username.trim().length > 0) {
+    return { name: username };
   }
-}
 
-export function setStoredUser(user: SessionUser | null): void {
-  if (typeof window === "undefined") return;
-  if (user) {
-    window.localStorage.setItem(USER_KEY, JSON.stringify(user));
-  } else {
-    window.localStorage.removeItem(USER_KEY);
-  }
+  const provider = user.app_metadata?.provider ?? "usuario";
+  return { name: provider.toUpperCase().slice(0, 10) };
 }

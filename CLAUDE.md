@@ -32,10 +32,14 @@ There is no test runner configured yet.
 ## Spec Driven Design
 
 This project follows spec-driven development. Every non-trivial feature starts as a spec in
-`specs/NN-titulo.md` (Spanish, sequential numbering) with status `Draft` → `Approved` →
-`Implemented`, written with `/spec` and built with `/spec-impl` (from `Klerith/fernando-skills`,
-installed under `.claude/skills/spec` and `.claude/skills/spec-impl`). Read `specs/` before
-touching a feature area to see what's already decided, in progress, or explicitly out of scope.
+`specs/NN-titulo.md` (Spanish, sequential numbering; some features get their own subfolder, e.g.
+`specs/skins/`, `specs/game-jam/<id>/`) with status `Draft` → `Approved` → `Implemented`, written
+with `/spec` and built with `/spec-impl` (from `Klerith/fernando-skills`, installed under
+`.claude/skills/spec` and `.claude/skills/spec-impl`). For a game spec specifically, use
+`/spec-impl-game` instead: same implementation flow, but after the last plan step it automatically
+chains the `skin-designer` then `mobile-porter` agents so the new game ships with skins and a
+responsive layout (`.claude/skills/spec-impl-game`). Read `specs/` before touching a feature area
+to see what's already decided, in progress, or explicitly out of scope.
 
 ### `/add-game` — porting a new arcade game
 
@@ -48,41 +52,27 @@ freehanding a new game spec. Reference engines to port live in `references/start
 
 ### Agents (`.claude/agents/`)
 
-Subagents that plan/design and, for a couple of them, implement directly — but never touch
-migrations themselves. Most hand off a concrete next step (a recommendation, spec files, or a
-Draft spec) for a human or another skill to act on; the implementer agents apply code changes
-autonomously and leave `Implemented` documentation instead:
+Subagents that plan/design and, for most of them, implement directly — but never touch migrations
+themselves. Each entry below is a one-line summary; read the linked `.md` for the full brief
+(inputs, coverage-memory file, self-verify steps).
 
-- **`game-planner`** (`model: opus`) — runs **before** `/add-game`; decides _which_ game to add
-  next (not how to port it). Reads the Supabase catalog (`references/implemented-games.md`),
-  `HAS_REAL_ENGINE`, and unconsumed sources in `references/started-games/`, then recommends one
-  game with justification (catalog placeholders first, thin categories like VERSUS/PUZZLE
-  weighted higher). Keeps a persistent, git-tracked memory of past suggestions in
-  `references/game-suggestions.md` (a checklist) so it never repeats a recommendation. Output:
-  "run `/add-game <id>`" for the user to act on.
-- **`game-jam`** — given a theme, invents one original arcade game (engine built from scratch,
-  Snake-style, not a 1:1 port) and writes **2 self-contained spec options** (design + technical in
-  one file each) to `specs/game-jam/<id>/<enfoque-a>.md` / `<enfoque-b>.md`, each named after its
-  own approach, for a human to review and pick one.
-- **`skin-designer`** — audits that every game with a real engine (`asteroids`, `tetris`,
-  `arkanoid`, `snake`) has at least 3 skins (neon, retro, clásico/default) that read well in the
-  app's fixed dark mode, and **implements directly** (no approval gate) the palette-injection
-  seam (engine → canvas → game-player) plus a **per-game** skin selector with independent
-  persistence per game. Runs `npm run lint`/`build` to self-verify. Keeps coverage memory in
-  `references/skin-coverage.md` and leaves `specs/skins/sistema-de-skins.md` as `Implemented`
-  documentation of the work done, not a Draft awaiting `/spec-impl`.
-- **`mobile-porter`** — audits that the app reads well on both touch/mobile and desktop/web,
-  across the 4 real-engine games (canvas + HUD + touch controls, per SPEC 10) and every site page
-  (home, library, game detail, leaderboard, login, about, nav), and **implements directly** (no
-  approval gate) the CSS/layout fixes — consolidating the scattered breakpoints in
-  `app/globals.css`, always behind `@media (max-width: ...)`/`@media (pointer: coarse)` so desktop
-  stays unchanged. Never touches game mechanics/engines or migrations. Runs `npm run lint`/`build`
-  to self-verify. Keeps coverage memory in `references/mobile-coverage.md` and leaves
-  `specs/mobile/revision-responsive.md` as `Implemented` documentation of the work done.
+- **`game-planner`** (`model: opus`, `.claude/agents/game-planner.md`) — decides _which_ game to
+  add next (not how to port it); recommends only, writes no specs/code.
+- **`game-jam`** (`model: sonnet`, `.claude/agents/game-jam.md`) — given a theme, invents an
+  original arcade game and writes 2 spec options to `specs/game-jam/<id>/` for a human to pick.
+- **`skin-designer`** (`.claude/agents/skin-designer.md`) — implements directly: at least 3 skins
+  (neon/retro/clásico) per real-engine game, palette-injection seam, and a per-game selector.
+- **`mobile-porter`** (`.claude/agents/mobile-porter.md`) — implements directly: responsive/touch
+  CSS and layout fixes across games and site pages, never touching game mechanics.
+- **`game-performance-booster`** (`.claude/agents/game-performance-booster.md`) — implements
+  directly: audits a given game against the perf anti-pattern catalog in
+  `specs/11-rendimiento-frogger.md` and applies fixes (engine, canvas, CSS), using Arkanoid as the
+  optimized reference.
 
 ## Current state
 
-Implemented specs (`specs/01`–`09`, all `Implemented` except where noted):
+Implemented specs (`specs/01`–`11`, plus `specs/skins/` and `specs/game-jam/`, all `Implemented`
+except where noted):
 
 - **01–03**: MVP visual screens, home landing, About page + contact email (`app/api/contact/route.ts`
   via Resend).
@@ -93,12 +83,27 @@ Implemented specs (`specs/01`–`09`, all `Implemented` except where noted):
 - **06**: Catalog + leaderboard migrated to real Supabase tables (`games`, `scores`, see
   `lib/supabase/games.ts`), replacing the mock `GAMES`/`seededScores`/`localStorage` scores.
   Auth/session (`av_user`) is still mock (`context/session-context.tsx`, `lib/session.ts`).
-- **07–09**: Tetris, Arkanoid, Snake engines ported the same way (each its own
+- **07–09**: Tetris, Arkanoid, Snake engines ported/built the same way (each its own
   `lib/games/<id>/engine.ts` + `components/games/<id>-canvas.tsx`).
+- **10**: Touch controls for mobile (`specs/10-controles-tactiles-moviles.md`) — on-screen controls
+  and responsive canvas sizing across the 4 real-engine games of the time.
+- **11**: Frogger performance pass (`specs/11-rendimiento-frogger.md`) — documents the canvas/React
+  perf anti-pattern catalog (`emitState` dedupe, no per-entity `shadowBlur`/`shadowColor`, no
+  `draw()` while paused, no shared CSS compositing layers over the live canvas) that
+  `game-performance-booster` audits every real-engine game against.
+- **`specs/skins/sistema-de-skins.md`**: per-game skin system (neon/retro/clásico), implemented by
+  `skin-designer` for all 4 original real-engine games.
+- **`specs/game-jam/frogger/`**: Frogger, an original game (not a port) invented via `game-jam` and
+  added as a 5th real engine. Unlike the other four it's a single combined component,
+  `lib/games/frogger/FroggerGame.tsx` (no separate `components/games/frogger-canvas.tsx`), and
+  remounts via a `frogKey` instead of an imperative restart handle.
+- **`specs/game-jam/columnas/`**: two `Draft` spec options (`columnas-clasico.md`,
+  `columnas-combo.md`) awaiting a human pick — not yet implemented.
 
 Games with a real playable engine today (`HAS_REAL_ENGINE` in `components/game-player.tsx`):
-`asteroids`, `tetris`, `arkanoid`, `snake`. All other rows seeded in the Supabase `games` table
-still use the placeholder arena.
+`asteroids`, `tetris`, `arkanoid`, `snake`, `frogger`. All other rows seeded in the Supabase `games`
+table still use the placeholder arena. Note `references/implemented-games.md` (the game-planner
+catalog memory) has not been updated to include `frogger` yet.
 
 Still mock/out of scope: real Supabase Auth (login/register/logout are `localStorage`-backed via
 `context/session-context.tsx`), OAuth buttons on `/login` (decorative), anti-cheat/score
@@ -106,7 +111,10 @@ validation beyond `score >= 0`, admin UI for the `games` table (catalog is migra
 
 ## Adding a game (the 5 seams)
 
-Full recipe: `.claude/skills/add-game/reference.md`. Every ported game touches exactly these:
+Full recipe: `.claude/skills/add-game/reference.md`. This pattern applies to **ports** done via
+`/add-game`; every ported game touches exactly these. Games invented from scratch by `game-jam`
+(Snake, Frogger) don't start from a `game.js` source and may deviate — e.g. Frogger ships as a
+single combined component instead of a separate engine + canvas wrapper (see `## Current state`).
 
 1. **Engine** `lib/games/<id>/engine.ts` — a `<Game>Engine` class wrapping the original `game.js`
    in instance state (no cross-instance shared state). Constructor wires listeners but does not
