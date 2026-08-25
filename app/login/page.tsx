@@ -4,6 +4,11 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/context/session-context";
 import { createClient } from "@/lib/supabase/client";
+import {
+  EMAIL_REGEX,
+  PASSWORD_REGEX,
+  getPasswordRequirements,
+} from "@/lib/validation";
 
 type Tab = "in" | "up";
 type Provider = "google" | "github";
@@ -46,11 +51,23 @@ export default function LoginPage() {
     setSignupDone(false);
   };
 
+  const passwordRequirements = getPasswordRequirements(pass);
+  const isSignupValid = PASSWORD_REGEX.test(pass) && EMAIL_REGEX.test(email);
+  const isLoginValid = EMAIL_REGEX.test(email) && pass.trim().length > 0;
+
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage(null);
 
     if (tab === "up") {
+      if (!isSignupValid) {
+        setMessage({
+          kind: "error",
+          text: "Revisa el correo y los requisitos de la contraseña antes de continuar.",
+        });
+        return;
+      }
+
       setLoading(true);
       const supabase = createClient();
       const { error } = await supabase.auth.signUp({
@@ -69,6 +86,14 @@ export default function LoginPage() {
       }
 
       setSignupDone(true);
+      return;
+    }
+
+    if (!isLoginValid) {
+      setMessage({
+        kind: "error",
+        text: "Escribe un correo válido y tu contraseña.",
+      });
       return;
     }
 
@@ -239,6 +264,33 @@ export default function LoginPage() {
                 />
               </div>
 
+              {tab === "up" && (
+                <ul
+                  className="mono"
+                  style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: "-6px 0 4px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                    fontSize: 11,
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {passwordRequirements.map((req) => (
+                    <li
+                      key={req.label}
+                      style={{
+                        color: req.met ? "var(--cyan)" : "var(--ink-faint)",
+                      }}
+                    >
+                      {req.met ? "✓" : "✗"} {req.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
               {tab === "in" && (
                 <button
                   type="button"
@@ -263,7 +315,7 @@ export default function LoginPage() {
                 className="btn lg"
                 type="submit"
                 style={{ width: "100%", marginTop: 8 }}
-                disabled={loading}
+                disabled={loading || (tab === "up" && !isSignupValid)}
               >
                 {loading
                   ? "PROCESANDO…"
