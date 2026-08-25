@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PASSWORD_REGEX, getPasswordRequirements } from "@/lib/validation";
 
 type Status = "checking" | "ready" | "no-session" | "saving" | "done";
 
@@ -25,12 +26,15 @@ export default function ResetPasswordPage() {
     });
   }, []);
 
+  const passwordRequirements = getPasswordRequirements(pass);
+  const isPasswordValid = PASSWORD_REGEX.test(pass);
+
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
-    if (pass.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres.");
+    if (!isPasswordValid) {
+      setError("La contraseña no cumple los requisitos.");
       return;
     }
     if (pass !== confirmPass) {
@@ -134,6 +138,32 @@ export default function ResetPasswordPage() {
                 required
               />
             </div>
+
+            <ul
+              className="mono"
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: "-6px 0 4px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                fontSize: 11,
+                letterSpacing: "0.04em",
+              }}
+            >
+              {passwordRequirements.map((req) => (
+                <li
+                  key={req.label}
+                  style={{
+                    color: req.met ? "var(--cyan)" : "var(--ink-faint)",
+                  }}
+                >
+                  {req.met ? "✓" : "✗"} {req.label}
+                </li>
+              ))}
+            </ul>
+
             <div className="field">
               <label>Confirmar contraseña</label>
               <input
@@ -149,7 +179,7 @@ export default function ResetPasswordPage() {
               className="btn lg"
               type="submit"
               style={{ width: "100%", marginTop: 8 }}
-              disabled={status === "saving"}
+              disabled={status === "saving" || !isPasswordValid}
             >
               {status === "saving" ? "GUARDANDO…" : "GUARDAR CONTRASEÑA"}
             </button>
