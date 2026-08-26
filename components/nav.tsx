@@ -13,12 +13,13 @@ export default function Nav() {
   const { user, logout } = useSession();
 
   const isActive = (
-    name: "inicio" | "biblioteca" | "salon" | "about" | "auth"
+    name: "inicio" | "biblioteca" | "salon" | "pokemon" | "about" | "auth"
   ) => {
     if (name === "inicio") return pathname === "/";
     if (name === "biblioteca")
       return pathname === "/games" || pathname.startsWith("/game/");
     if (name === "salon") return pathname === "/leaderboard";
+    if (name === "pokemon") return pathname === "/pokemon";
     if (name === "about") return pathname === "/about";
     return pathname === "/login";
   };
@@ -60,6 +61,9 @@ export default function Nav() {
             className={isActive("salon") ? "active" : ""}
           >
             Salón de la Fama
+          </Link>
+          <Link href="/pokemon" className={isActive("pokemon") ? "active" : ""}>
+            Pokemon (Bonus)
           </Link>
           <Link href="/about" className={isActive("about") ? "active" : ""}>
             Acerca de
@@ -139,6 +143,13 @@ export default function Nav() {
           onClick={close}
         >
           Salón de la Fama
+        </Link>
+        <Link
+          href="/pokemon"
+          className={isActive("pokemon") ? "active" : ""}
+          onClick={close}
+        >
+          Pokemon (Bonus)
         </Link>
         <Link
           href="/about"
