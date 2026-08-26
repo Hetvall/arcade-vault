@@ -9,36 +9,47 @@ function spriteUrl(id: number) {
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
 }
 
-export default function ContadorPage() {
+function clamp(value: number) {
+  return Math.min(MAX_COUNT, Math.max(MIN_COUNT, value));
+}
+
+export default function PokemonPage() {
   const [count, setCount] = useState(MIN_COUNT);
-  const [name, setName] = useState<{ id: number; value: string } | null>(null);
+  const [names, setNames] = useState<Record<number, string>>({});
+  const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    if (names[count]) return;
 
-    fetch(`https://pokeapi.co/api/v2/pokemon/${count}`)
+    const controller = new AbortController();
+
+    fetch(`https://pokeapi.co/api/v2/pokemon/${count}`, {
+      signal: controller.signal,
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancelled && data?.name) {
-          setName({ id: count, value: data.name });
-        }
+        if (data?.name) setNames((prev) => ({ ...prev, [count]: data.name }));
       })
       .catch(() => {});
 
-    return () => {
-      cancelled = true;
-    };
-  }, [count]);
+    return () => controller.abort();
+  }, [count, names]);
 
-  const displayName = name?.id === count ? name.value : null;
+  const displayName = names[count] ?? null;
+
+  // Cada Pokémon nuevo vuelve a ocultar el nombre hasta que se revele.
+  const goTo = (next: number) => {
+    setRevealed(false);
+    setCount(clamp(next));
+  };
 
   return (
     <div
       className="fade-in"
       style={{ padding: "48px 24px", textAlign: "center" }}
     >
-      <div className="kicker pixel neon-cyan">▸ CONTADOR POKÉMON</div>
-      <h1 className="about-title" style={{ marginBottom: 32 }}>
+      <div className="kicker pixel neon-cyan">▸ POKÉMON (BONUS)</div>
+      <h1 className="about-title pokemon-title" style={{ marginBottom: 32 }}>
         ¿QUÉ POKÉMON ES?
       </h1>
 
@@ -67,16 +78,33 @@ export default function ContadorPage() {
           style={{ imageRendering: "pixelated" }}
         />
 
-        <div className="pixel" style={{ fontSize: 20, minHeight: 28 }}>
+        <div
+          className="pixel"
+          style={{
+            fontSize: 20,
+            minHeight: 28,
+            filter: revealed ? "none" : "blur(8px)",
+            userSelect: revealed ? "auto" : "none",
+            transition: "filter 0.2s ease",
+          }}
+        >
           {displayName ? displayName.toUpperCase() : "…"}
         </div>
+
+        <button
+          className="btn ghost"
+          type="button"
+          onClick={() => setRevealed((r) => !r)}
+        >
+          {revealed ? "OCULTAR" : "👁 REVELAR"}
+        </button>
 
         <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
           <button
             className="btn ghost"
             type="button"
             disabled={count <= MIN_COUNT}
-            onClick={() => setCount((c) => Math.max(MIN_COUNT, c - 1))}
+            onClick={() => goTo(count - 1)}
           >
             − ANTERIOR
           </button>
@@ -84,7 +112,7 @@ export default function ContadorPage() {
             className="btn xl press"
             type="button"
             disabled={count >= MAX_COUNT}
-            onClick={() => setCount((c) => Math.min(MAX_COUNT, c + 1))}
+            onClick={() => goTo(count + 1)}
           >
             ▶ SIGUIENTE
           </button>
@@ -93,7 +121,7 @@ export default function ContadorPage() {
         <button
           className="btn ghost"
           type="button"
-          onClick={() => setCount(MIN_COUNT)}
+          onClick={() => goTo(MIN_COUNT)}
         >
           REINICIAR
         </button>
