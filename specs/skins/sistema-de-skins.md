@@ -3,8 +3,9 @@
 - Estado: Implemented
 - Fecha: 2026-08-18
 - Alcance acumulado: **Asteroids** (`asteroids`), **Tetris** (`tetris`),
-  **Arkanoid** (`arkanoid`) y **Snake** (`snake`) — los 4 juegos con motor real
-  tienen sus 3 skins implementadas.
+  **Arkanoid** (`arkanoid`), **Snake** (`snake`) y **Pong** (`pong`, añadido el
+  2026-08-31) — los 5 juegos con motor real (vectoriales o sprite) tienen sus 3
+  skins implementadas.
 
 Documenta el sistema de skins **ya implementado** para los juegos con motor real
 de Arcade Vault: cada juego expone al menos 3 skins (**clásico** / default,
@@ -26,7 +27,7 @@ Este archivo es documentación de lo aplicado, no un Draft a la espera de
   `localStorage` mapea `{ [gameId]: SkinId }` — **no** hay clave global. Sigue el
   patrón mock de la sesión (`av_user`, `lib/session.ts`). `SKINNABLE_GAMES`
   controla qué juegos ofrecen selector (hoy `asteroids`, `tetris`, `arkanoid`,
-  `snake`).
+  `snake`, `pong`).
 - **Selector** (`components/skin-picker.tsx`): componente cliente reutilizable,
   scoped explícitamente a un `gameId` (muestra el título del juego en su
   etiqueta). Se monta en dos puntos:
@@ -361,8 +362,85 @@ del sprite pero desplaza su tono hacia el acento de la skin). En clásico
   (`components/skin-picker.tsx`, `app/game/[id]/page.tsx`) y aplica a Tetris vía
   `SKINNABLE_GAMES`.
 
+## Pong — contrato y paletas
+
+Interfaz `PongPalette` (en `lib/games/pong/engine.ts`), roles: `background`
+(cancha), `centerLine` (línea central discontinua, incluye su propio alfa),
+`playerPaddle` (paleta izquierda), `cpuPaddle` (paleta derecha), `ball`
+(relleno de la pelota cuadrada), `ballGlowColor` (`shadowColor` de la pelota,
+puede diferir del relleno), `glow` (`shadowBlur` de las paletas; 0 = sin brillo)
+y `ballGlow` (`shadowBlur` de la pelota). Paletas concretas en
+`lib/games/pong/skins.ts`; la clásica vive en el engine (`CLASSIC_PONG_PALETTE`)
+como fuente de verdad del look original.
+
+Pong es un motor puramente **vectorial** (`fillRect`, línea central `stroke`,
+sin sprites), por lo que una skin de solo color basta — mismo caso que Asteroids
+y Tetris, sin necesidad de teñido. Cada paleta usa su propio color de relleno
+como `shadowColor`; en clásico ambas paletas son cian, replicando 1:1 el look
+original. El neón aprovecha que ahora hay dos tokens de paleta para diferenciar
+jugador y CPU por tono (imposible en el clásico monocolor).
+
+| Rol           | clásico               | neón                  | retro                 |
+| ------------- | --------------------- | --------------------- | --------------------- |
+| background    | `#05070a`             | `#0a0a0f` (= --bg)    | `#0d0a04`             |
+| centerLine    | `rgba(0,229,255,.35)` | `rgba(0,245,255,.35)` | `rgba(255,176,0,.28)` |
+| playerPaddle  | `#00e5ff`             | `#00f5ff` (--cyan)    | `#ffc21f`             |
+| cpuPaddle     | `#00e5ff`             | `#ff006e` (--magenta) | `#b8791a`             |
+| ball          | `#e6feff`             | `#f5ff00` (--yellow)  | `#fff0c2`             |
+| ballGlowColor | `#00e5ff`             | `#f5ff00`             | `#ffb000`             |
+| glow          | `12`                  | `12`                  | `4`                   |
+| ballGlow      | `14`                  | `16`                  | `8`                   |
+
+- **clásico**: réplica 1:1 de los literales del engine (cancha azul-negro, ambas
+  paletas y línea central cian neón, pelota casi-blanca con halo cian). No se
+  reinventa.
+- **neón**: reutiliza la paleta de glow de la UI (`--cyan/--magenta/--yellow`)
+  sobre `--bg`; paleta del jugador cian, la de la CPU magenta (contraste de
+  tono), pelota amarilla con halo propio.
+- **retro**: fósforo ámbar de CRT, distinto en carácter al clásico y al neón:
+  monocromo cálido con separación por luminosidad entre la paleta del jugador
+  (ámbar brillante) y la de la CPU (ámbar-bronce apagado); pelota ámbar
+  casi-blanca que sobresale del par de paletas.
+
+### Validación de modo oscuro (sobre cada `background` propio y `--bg` #0a0a0f)
+
+- **clásico**: colores del original, ya validados de facto (cian `#00e5ff` y
+  pelota `#e6feff` sobre `#05070a`; contraste altísimo). Se preservan.
+- **neón**: `#00f5ff` (jugador), `#ff006e` (CPU) y `#f5ff00` (pelota) son neones
+  saturados y luminosos, resaltan sobre `#0a0a0f` y se distinguen entre sí por
+  tono. Línea central cian a 0.35 de alfa: visible sin competir con las paletas.
+- **retro**:
+  - `playerPaddle #ffc21f` sobre `#0d0a04`: ámbar brillante, contraste altísimo.
+  - `cpuPaddle #b8791a` sobre `#0d0a04`: ámbar-bronce apagado **pero con
+    luminosidad suficiente** para no fundirse con el ámbar-negro; queda
+    claramente más tenue que la paleta del jugador (jerarquía por luminosidad, no
+    por tono).
+  - `ball #fff0c2`: ámbar casi-blanco, sobresale de ambas paletas por su mayor
+    luminosidad.
+  - Sobre `--bg` azul-negro también se distinguen todos (el ámbar contrasta aún
+    más contra un fondo frío).
+
+**Limitación conocida (retro)**: al ser monocromo cálido, jugador y CPU se
+distinguen por luminosidad y posición, no por tono. Es el carácter buscado del
+fósforo CRT; aceptado.
+
+## Archivos tocados (Pong)
+
+- `lib/games/pong/engine.ts` — `PongPalette`, `CLASSIC_PONG_PALETTE`, 3.er
+  parámetro del constructor (default clásico), `setPalette`, `draw*`
+  parametrizados (`drawBoard`/`drawPaddle`/`drawBall`).
+- `lib/games/pong/skins.ts` — paletas neón/retro + `resolvePongPalette`.
+- `lib/skins.ts` — `pong` añadido a `SKINNABLE_GAMES`.
+- `components/games/pong-canvas.tsx` — prop `palette` + `setPalette` en caliente.
+- `components/game-player.tsx` — `resolvePongPalette`, paleta pasada al
+  `PongCanvas` (estado de skin y `data-skin` ya eran compartidos).
+- `app/globals.css` — forks `[data-skin]` del marco `.pong-canvas` (neón/retro).
+- El selector dentro y fuera del reproductor ya es genérico
+  (`components/skin-picker.tsx`, `app/game/[id]/page.tsx`) y aplica a Pong vía
+  `SKINNABLE_GAMES`.
+
 ## Estado final
 
-Los 4 juegos con motor real (`asteroids`, `tetris`, `arkanoid`, `snake`) tienen
-sus 3 skins (clásico/neón/retro) implementadas y verificadas (lint + build). No
-quedan huecos pendientes dentro del alcance (juegos con motor real).
+Los 5 juegos con motor real (`asteroids`, `tetris`, `arkanoid`, `snake`, `pong`)
+tienen sus 3 skins (clásico/neón/retro) implementadas y verificadas (lint +
+build). No quedan huecos pendientes dentro del alcance (juegos con motor real).

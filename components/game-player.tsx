@@ -20,11 +20,16 @@ import SnakeCanvas, {
   type SnakeCanvasHandle,
 } from "@/components/games/snake-canvas";
 import type { SnakeState } from "@/lib/games/snake/engine";
+import PongCanvas, {
+  type PongCanvasHandle,
+} from "@/components/games/pong-canvas";
+import type { PongState } from "@/lib/games/pong/engine";
 import FroggerGame from "@/lib/games/frogger/FroggerGame";
 import { resolveAsteroidsPalette } from "@/lib/games/asteroids/skins";
 import { resolveTetrisPalette } from "@/lib/games/tetris/skins";
 import { resolveArkanoidPalette } from "@/lib/games/arkanoid/skins";
 import { resolveSnakePalette } from "@/lib/games/snake/skins";
+import { resolvePongPalette } from "@/lib/games/pong/skins";
 import SkinPicker from "@/components/skin-picker";
 import { getStoredSkin, SKINNABLE_GAMES, type SkinId } from "@/lib/skins";
 import TouchControls from "@/components/games/touch-controls";
@@ -54,6 +59,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   const isTetris = game.id === "tetris";
   const isArkanoid = game.id === "arkanoid";
   const isSnake = game.id === "snake";
+  const isPong = game.id === "pong";
   const isFrogger = game.id === "frogger";
 
   const [score, setScore] = useState(0);
@@ -72,6 +78,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   const tetrisPalette = resolveTetrisPalette(skin);
   const arkanoidPalette = resolveArkanoidPalette(skin);
   const snakePalette = resolveSnakePalette(skin);
+  const pongPalette = resolvePongPalette(skin);
   const showSkinPicker = SKINNABLE_GAMES.has(game.id);
   // "INVITADO" por defecto: coincide con el primer render en servidor y
   // cliente (la sesión real de Supabase todavía no está disponible).
@@ -88,6 +95,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   const tetrisRef = useRef<TetrisCanvasHandle>(null);
   const arkanoidRef = useRef<ArkanoidCanvasHandle>(null);
   const snakeRef = useRef<SnakeCanvasHandle>(null);
+  const pongRef = useRef<PongCanvasHandle>(null);
 
   const isTouchDevice = useIsTouchDevice();
 
@@ -171,6 +179,18 @@ export default function GamePlayer({ game }: { game: Game }) {
     }
   }, []);
 
+  // Estado real del motor de Pong, reemplazando el HUD/overlay que el canvas
+  // dibujaría (ver lib/games/pong/engine.ts). Pong tiene vidas como
+  // Asteroids/Arkanoid, así que reutiliza el estado `lives` existente.
+  const handlePongStateChange = useCallback((state: PongState) => {
+    setScore(state.score);
+    setLives(state.lives);
+    setLevel(state.level);
+    if (state.gameOver) {
+      setOver(true);
+    }
+  }, []);
+
   // Estado real del motor de Frogger (ver lib/games/frogger/FroggerGame.tsx).
   // Frogger no reporta un único onStateChange combinado como los demás
   // motores: expone 4 callbacks separados (score/lives/level/gameOver).
@@ -205,6 +225,8 @@ export default function GamePlayer({ game }: { game: Game }) {
       arkanoidRef.current?.restart();
     } else if (isSnake) {
       snakeRef.current?.restart();
+    } else if (isPong) {
+      pongRef.current?.restart();
     } else if (isFrogger) {
       setScore(0);
       setLives(3);
@@ -303,6 +325,13 @@ export default function GamePlayer({ game }: { game: Game }) {
                 paused={paused || over}
                 palette={snakePalette}
                 onStateChange={handleSnakeStateChange}
+              />
+            ) : isPong ? (
+              <PongCanvas
+                ref={pongRef}
+                paused={paused || over}
+                palette={pongPalette}
+                onStateChange={handlePongStateChange}
               />
             ) : (
               <FroggerGame

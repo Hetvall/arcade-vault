@@ -23,6 +23,7 @@ export const SKINNABLE_GAMES = new Set<string>([
   "tetris",
   "arkanoid",
   "snake",
+  "pong",
 ]);
 
 const SKINS_KEY = "av_skins";

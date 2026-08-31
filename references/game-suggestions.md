@@ -14,6 +14,9 @@ Estados: `[ ]` sugerido · `[~]` aprobado (spec en curso) · `[x]` implementado
       (reafirmado 2026-08-14: sigue siendo la mejor opción — VERSUS es la única categoría con 0
       motores reales hoy; `references/started-games/` no trae nada nuevo que portar, así que no
       cambia el análisis de esfuerzo/prioridad frente a `gloton`/`invasores`/`ranaria`.)
+      (confirmado por el usuario 2026-08-31: siguiente juego a portar. **Renombrado completo**:
+      el placeholder `duelo-pixel`/"DUELO PIXEL" se retira y se reemplaza por `pong`/"PONG"
+      (id, título y URL `/game/pong`), no se conserva el slug viejo. → `/add-game pong`)
 - [ ] `gloton` — Pac-Man (ARCADE) · placeholder en catálogo, sin engine.
       (reafirmado 2026-08-14: sigue como placeholder sin motor real; sin fuente porteable nueva
       en `references/started-games/` que cambie la prioridad.)
