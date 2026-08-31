@@ -47,18 +47,6 @@ function useIsTouchDevice() {
   return isTouch;
 }
 
-// Juegos con motor real (ver specs/05-juego-asteroides.md,
-// specs/07-juego-tetris.md, specs/08-juego-arkanoid.md,
-// specs/09-juego-snake.md y specs/game-jam/frogger/01-frogger-core.md). El
-// resto del catálogo sigue con la arena placeholder + puntaje simulado.
-const HAS_REAL_ENGINE = new Set([
-  "asteroids",
-  "tetris",
-  "arkanoid",
-  "snake",
-  "frogger",
-]);
-
 export default function GamePlayer({ game }: { game: Game }) {
   const router = useRouter();
   const { user, saveScore } = useSession();
@@ -67,7 +55,6 @@ export default function GamePlayer({ game }: { game: Game }) {
   const isArkanoid = game.id === "arkanoid";
   const isSnake = game.id === "snake";
   const isFrogger = game.id === "frogger";
-  const hasRealEngine = HAS_REAL_ENGINE.has(game.id);
 
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -126,16 +113,6 @@ export default function GamePlayer({ game }: { game: Game }) {
     };
   }, []);
 
-  // Puntaje simulado, solo para los juegos que todavía no tienen motor real.
-  useEffect(() => {
-    if (hasRealEngine || over || paused) return;
-    const t = setInterval(
-      () => setScore((s) => s + Math.floor(10 + Math.random() * 90)),
-      220
-    );
-    return () => clearInterval(t);
-  }, [hasRealEngine, over, paused]);
-
   // Precarga y bloquea las iniciales con el alias de la sesión real en
   // cuanto SessionProvider la sincroniza (ver session-context.tsx). El
   // invitado (sin sesión) sigue pudiendo teclear un nombre libre.
@@ -145,12 +122,6 @@ export default function GamePlayer({ game }: { game: Game }) {
       setName(user.name);
     }
   }, [user]);
-
-  // Nivel derivado de la puntuación, solo para los juegos con puntaje
-  // simulado. Asteroids y Tetris reportan su propio nivel real vía
-  // onStateChange.
-  const simulatedLevel = Math.floor(score / 2500) + 1;
-  const displayLevel = hasRealEngine ? level : simulatedLevel;
 
   // Estado real del motor de Asteroids, reemplazando el HUD/overlay que el
   // canvas original dibujaba (ver lib/games/asteroids/engine.ts).
@@ -239,8 +210,6 @@ export default function GamePlayer({ game }: { game: Game }) {
       setLives(3);
       setLevel(1);
       setFrogKey((k) => k + 1);
-    } else {
-      setScore(0);
     }
   };
 
@@ -273,7 +242,7 @@ export default function GamePlayer({ game }: { game: Game }) {
             </div>
             <div className="hud-stat level">
               <div className="l">Nivel</div>
-              <div className="v">{String(displayLevel).padStart(2, "0")}</div>
+              <div className="v">{String(level).padStart(2, "0")}</div>
             </div>
             {isAsteroids && tripleShotSecondsLeft > 0 && (
               <div className="hud-stat">
@@ -335,7 +304,7 @@ export default function GamePlayer({ game }: { game: Game }) {
                 palette={snakePalette}
                 onStateChange={handleSnakeStateChange}
               />
-            ) : isFrogger ? (
+            ) : (
               <FroggerGame
                 key={frogKey}
                 paused={paused || over}
@@ -344,14 +313,6 @@ export default function GamePlayer({ game }: { game: Game }) {
                 onLevelChange={handleFroggerLevelChange}
                 onGameOver={handleFroggerGameOver}
               />
-            ) : (
-              <div className="game-arena">
-                <div className="grid-floor"></div>
-                <div className="enemy e1"></div>
-                <div className="enemy e2"></div>
-                <div className="enemy e3"></div>
-                <div className="player-ship"></div>
-              </div>
             )}
             {paused && (
               <div
