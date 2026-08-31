@@ -956,6 +956,27 @@ body
   filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.5));
 }
 
+.cover-pong {
+  background: linear-gradient(135deg, #001a22, #05070a);
+}
+
+.cover-pong::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+        0deg,
+        rgba(0, 245, 255, 0.35) 0 10px,
+        transparent 10px 20px
+      )
+      50% 0 / 3px 100% no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) 14% 32% / 6px 36% no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) 84% 32% / 6px 36% no-repeat,
+    radial-gradient(circle at 55% 58%, #e6feff 0 5px, transparent 6px);
+  filter: drop-shadow(0 0 8px rgba(0, 245, 255, 0.5));
+}
+
 /* ===== detail screen ===== */
 .av-detail {
   display: grid;
@@ -1307,6 +1328,14 @@ body
 .av-player[data-skin="retro"] .arkanoid-canvas {
   box-shadow: inset 0 0 48px rgba(255, 176, 0, 0.14);
 }
+.av-player[data-skin="neon"] .pong-canvas {
+  box-shadow:
+    inset 0 0 32px rgba(0, 245, 255, 0.12),
+    0 0 24px rgba(255, 0, 110, 0.15);
+}
+.av-player[data-skin="retro"] .pong-canvas {
+  box-shadow: inset 0 0 32px rgba(255, 176, 0, 0.14);
+}
 
 /* Selector de skin por juego (components/skin-picker.tsx). Deja explícito
    sobre qué juego actúa mostrando su título. */
@@ -1386,6 +1415,19 @@ body
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* Pong: canvas de resolución lógica fija 800x600 escalado por CSS dentro de
+   .crt-screen (que ya mantiene aspect-ratio 4/3), mismo patrón que
+   .asteroids-canvas/.arkanoid-canvas. Marco neón cyan a juego con el
+   look clásico vectorial del engine (ver lib/games/pong/engine.ts). */
+.pong-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  box-shadow: inset 0 0 32px rgba(0, 245, 255, 0.12);
 }
 
 /* Tetris (fila "tetris"): tablero de resolución lógica fija 300x600 (10x20

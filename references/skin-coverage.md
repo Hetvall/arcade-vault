@@ -17,6 +17,7 @@ entradas ya marcadas `[x]`.
 | tetris    | [x]               | [x]  | [x]   |
 | arkanoid  | [x]               | [x]  | [x]   |
 | snake     | [x]               | [x]  | [x]   |
+| pong      | [x]               | [x]  | [x]   |
 
 ## Notas por juego
 
@@ -67,3 +68,17 @@ entradas ya marcadas `[x]`.
   brillante. Validado sobre `#0a0f0a`/`#0a0a0f`/`#0d0a04`. Limitación conocida:
   en retro (monocromo) la fruta se distingue por brillo y silueta, no por tono.
   Lint + build verificados.
+- **pong** — Implementado el 2026-08-31. Motor vectorial (`fillRect` + línea
+  central `stroke`, sin sprites), skin de solo color suficiente (mismo caso que
+  Asteroids/Tetris, sin teñido). Contrato `PongPalette`
+  (`background`/`centerLine`/`playerPaddle`/`cpuPaddle`/`ball`/`ballGlowColor`/
+  `glow`/`ballGlow`); clásico = look original 1:1 (cancha azul-negro, ambas
+  paletas y línea central cian, pelota casi-blanca con halo cian). Seam de
+  inyección engine → canvas → game-player idéntico al de Asteroids (constructor
+  - `setPalette` en caliente); selector por juego (`SkinPicker`) dentro y fuera
+    del reproductor, persistencia `av_skins`, `data-skin` en `.av-player` (forks
+    del marco `.pong-canvas`). Paletas: neón = glow de la UI diferenciando jugador
+    (cian) y CPU (magenta) + pelota amarilla; retro = fósforo ámbar CRT con
+    jugador ámbar brillante y CPU ámbar-bronce apagado (separados por luminosidad)
+  - pelota ámbar casi-blanca. Validado sobre `#05070a`/`#0a0a0f`/`#0d0a04`.
+    Lint + build verificados.
