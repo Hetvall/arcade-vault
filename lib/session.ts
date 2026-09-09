@@ -9,10 +9,25 @@ export interface SessionUser {
   name: string;
 }
 
-function normalize(value: unknown): string | null {
+const ALIAS_MAX_LENGTH = 10;
+
+/**
+ * Convierte un nombre/alias crudo en el alias de 10 caracteres que usa la
+ * UI. Si el valor no cabe entero, prioriza el primer nombre (antes del
+ * primer espacio) en vez de cortar a la mitad de una palabra — así
+ * "James Orozco Hernandez" se muestra como "JAMES" y no como "JAMES OROZ".
+ */
+export function toAlias(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed.toUpperCase().slice(0, 10) : null;
+  if (trimmed.length === 0) return null;
+  const source =
+    trimmed.length > ALIAS_MAX_LENGTH ? trimmed.split(/\s+/)[0] : trimmed;
+  return source.toUpperCase().slice(0, ALIAS_MAX_LENGTH);
+}
+
+function normalize(value: unknown): string | null {
+  return toAlias(value);
 }
 
 /**

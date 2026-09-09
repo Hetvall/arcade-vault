@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/context/session-context";
+import { toAlias } from "@/lib/session";
 import { createClient } from "@/lib/supabase/client";
 import {
   EMAIL_REGEX,
@@ -74,7 +75,7 @@ export default function LoginPage() {
         email,
         password: pass,
         options: {
-          data: { username: (alias || "PLAYER1").toUpperCase().slice(0, 10) },
+          data: { username: toAlias(alias) ?? "PLAYER1" },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
@@ -114,7 +115,8 @@ export default function LoginPage() {
       login({
         name:
           data.user.user_metadata?.username ||
-          email.split("@")[0].toUpperCase().slice(0, 10),
+          toAlias(email.split("@")[0]) ||
+          "USUARIO",
       });
     }
     router.push("/games");

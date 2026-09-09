@@ -24,6 +24,10 @@ import PongCanvas, {
   type PongCanvasHandle,
 } from "@/components/games/pong-canvas";
 import type { PongState } from "@/lib/games/pong/engine";
+import SpaceInvadersCanvas, {
+  type SpaceInvadersCanvasHandle,
+} from "@/components/games/space-invaders-canvas";
+import type { SpaceInvadersState } from "@/lib/games/space-invaders/engine";
 import FroggerGame, {
   type FroggerGameHandle,
 } from "@/lib/games/frogger/FroggerGame";
@@ -62,6 +66,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   const isArkanoid = game.id === "arkanoid";
   const isSnake = game.id === "snake";
   const isPong = game.id === "pong";
+  const isSpaceInvaders = game.id === "space-invaders";
   const isFrogger = game.id === "frogger";
 
   const [score, setScore] = useState(0);
@@ -98,6 +103,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   const arkanoidRef = useRef<ArkanoidCanvasHandle>(null);
   const snakeRef = useRef<SnakeCanvasHandle>(null);
   const pongRef = useRef<PongCanvasHandle>(null);
+  const spaceInvadersRef = useRef<SpaceInvadersCanvasHandle>(null);
   const froggerRef = useRef<FroggerGameHandle>(null);
 
   const isTouchDevice = useIsTouchDevice();
@@ -194,6 +200,22 @@ export default function GamePlayer({ game }: { game: Game }) {
     }
   }, []);
 
+  // Estado real del motor de Space Invaders, reemplazando el HUD/overlay que
+  // el canvas dibujaría (ver lib/games/space-invaders/engine.ts). Space
+  // Invaders tiene vidas como Asteroids/Arkanoid/Pong, así que reutiliza el
+  // estado `lives` existente y cae en la misma rama "Vidas" del HUD.
+  const handleSpaceInvadersStateChange = useCallback(
+    (state: SpaceInvadersState) => {
+      setScore(state.score);
+      setLives(state.lives);
+      setLevel(state.level);
+      if (state.gameOver) {
+        setOver(true);
+      }
+    },
+    []
+  );
+
   // Estado real del motor de Frogger (ver lib/games/frogger/FroggerGame.tsx).
   // Frogger no reporta un único onStateChange combinado como los demás
   // motores: expone 4 callbacks separados (score/lives/level/gameOver).
@@ -230,6 +252,8 @@ export default function GamePlayer({ game }: { game: Game }) {
       snakeRef.current?.restart();
     } else if (isPong) {
       pongRef.current?.restart();
+    } else if (isSpaceInvaders) {
+      spaceInvadersRef.current?.restart();
     } else if (isFrogger) {
       setScore(0);
       setLives(3);
@@ -335,6 +359,12 @@ export default function GamePlayer({ game }: { game: Game }) {
                 paused={paused || over}
                 palette={pongPalette}
                 onStateChange={handlePongStateChange}
+              />
+            ) : isSpaceInvaders ? (
+              <SpaceInvadersCanvas
+                ref={spaceInvadersRef}
+                paused={paused || over}
+                onStateChange={handleSpaceInvadersStateChange}
               />
             ) : (
               <FroggerGame
