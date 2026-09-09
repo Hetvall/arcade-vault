@@ -19,6 +19,9 @@ Estados: `[ ]` sugerido · `[~]` aprobado (spec en curso) · `[x]` implementado
       (actualizado 2026-09-09: la fila placeholder `invasores` que existía en Supabase fue
       **eliminada del catálogo** — mismo commit de limpieza que `gloton`. Portar este juego hoy
       implica insertar una fila **nueva**.)
+      (reafirmado 2026-09-09: recomendación principal de esta corrida — SHOOTER sigue con 1 solo
+      motor real (Asteroids); carril fijo de disparo, single-player y bajo esfuerzo lo hacen el
+      candidato de menor fricción entre las categorías delgadas.)
       → `/add-game invasores`
 - [ ] `air-hockey` — Air Hockey (VERSUS) · sugerido 2026-08-14 · Razón: VERSUS ya tiene motor real
       (Pong, implementado 2026-08-31); Air Hockey aporta duelo físico en tiempo real, mecánica

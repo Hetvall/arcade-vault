@@ -977,6 +977,34 @@ body
   filter: drop-shadow(0 0 8px rgba(0, 245, 255, 0.5));
 }
 
+.cover-space-invaders {
+  background: linear-gradient(180deg, #1a1400, #05070a);
+}
+
+.cover-space-invaders::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 35%, var(--yellow) 0 4px, transparent 5px) 0
+      0 / 40px 40px repeat,
+    radial-gradient(circle at 70% 55%, var(--yellow) 0 4px, transparent 5px)
+      20px 20px / 40px 40px repeat;
+  filter: drop-shadow(0 0 6px rgba(255, 210, 63, 0.55));
+}
+
+.cover-space-invaders::before {
+  content: "▓▓▄▓▓";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--yellow);
+  font-size: 20px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px var(--yellow);
+}
+
 /* ===== detail screen ===== */
 .av-detail {
   display: grid;
@@ -1428,6 +1456,18 @@ body
   height: 100%;
   display: block;
   box-shadow: inset 0 0 32px rgba(0, 245, 255, 0.12);
+}
+
+/* Space Invaders: canvas de resolución lógica fija 800x600 escalado por CSS
+   dentro de .crt-screen (que ya mantiene aspect-ratio 4/3), mismo patrón
+   que .asteroids-canvas/.arkanoid-canvas. Sin skin en este spec (ver
+   specs/15-juego-space-invaders.md), así que sin marco por [data-skin]. */
+.space-invaders-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* Tetris (fila "tetris"): tablero de resolución lógica fija 300x600 (10x20

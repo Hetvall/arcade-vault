@@ -3,7 +3,7 @@
 **Estado:** Implemented (código) · Recomendaciones de BD pendientes de aplicar por un humano
 **Depende de:** SPEC 04 (Supabase base), SPEC 06 (catálogo/scores + RLS), SPEC 12 (auth real),
 SPEC 13 (medidas de seguridad)
-**Fecha:** 2026-08-26
+**Fecha:** 2026-08-26 · **Re-auditoría:** 2026-09-09
 
 ## Diagnóstico
 
@@ -121,6 +121,17 @@ create policy "public insert scores"
 Mantener el `char_length(name) between 1 and 10` alineado con el cap del campo de nombre en
 `components/game-player.tsx:398` (`slice(0, 10)`). Si ese cap cambia, actualizar la política a
 la par.
+
+## Re-auditoría 2026-09-09
+
+Segunda corrida del `security-auditor`. Se re-verificaron los 8 controles de la tabla App
+(`next.config.ts`, `lib/validation.ts`, `app/login/page.tsx`, `app/reset-password/page.tsx`,
+`proxy.ts`, `lib/supabase/proxy.ts`, `components/game-player.tsx`) y los 6 de la tabla BD:
+**sin regresiones**, todo sigue cumpliendo. No se aplicó ningún fix de código. La BD sigue
+endurecida (política `public insert scores` con el `WITH CHECK` correcto, RLS activo en
+`games`/`scores`, migración `harden_scores_insert_policy` presente). `get_advisors(security)`
+reporta un único warning: `auth_leaked_password_protection` (dashboard). Sin cambios de código,
+`npm run lint`/`npm run build` no eran obligatorios en esta corrida.
 
 ## Consideración residual (no es un fix)
 
