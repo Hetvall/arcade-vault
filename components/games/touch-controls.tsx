@@ -1,21 +1,23 @@
 "use client";
 
-// Overlay de controles táctiles compartido por los 4 juegos con motor real.
-// Ver specs/10-controles-tactiles-moviles.md. No depende de ningún juego
+// Overlay de controles táctiles compartido por los juegos con motor real.
+// Ver specs/10-controles-tactiles-moviles.md y
+// .claude/skills/add-touch-controls/reference.md. No depende de ningún juego
 // concreto: recibe `layout` (qué botones dibujar) y `onKey` (a qué método del
 // ref del canvas reenviar cada pulsación) — game-player.tsx decide el resto.
 //
 // Dos familias de layout, con firmas de onKey distintas:
-// - "hold" (asteroids, arkanoid): los motores leen this.keys cada frame
-//   (setKey), así que basta con onKey(code, true) en touchstart y
+// - "hold" (asteroids, arkanoid, pong): los motores leen this.keys cada
+//   frame (setKey), así que basta con onKey(code, true) en touchstart y
 //   onKey(code, false) en touchend/touchcancel. Asteroids es la excepción:
 //   el botón de disparo simula pulsaciones repetidas (ver TouchButton.repeat)
 //   porque el motor trata "Space" como pulsación discreta por frame
 //   (justPressed), no como estado continuo.
-// - "press" (snake, tetris): los motores exponen pressKey(code), una
-//   pulsación = una acción. Tetris repite mientras se mantiene presionado
-//   en izquierda/derecha/abajo (imitando el auto-repeat de teclado del que
-//   depende hoy); snake no repite nunca (la serpiente ya avanza sola).
+// - "press" (snake, tetris, frogger): los motores exponen pressKey(code),
+//   una pulsación = una acción. Tetris repite mientras se mantiene
+//   presionado en izquierda/derecha/abajo (imitando el auto-repeat de
+//   teclado del que depende hoy); snake y frogger no repiten nunca (la
+//   serpiente ya avanza sola y la rana anima su salto por su cuenta).
 //
 // Solo se usan handlers touchstart/touchend/touchcancel (nunca onClick) para
 // no disparar además el evento de mouse fantasma que el navegador sintetiza
@@ -94,12 +96,12 @@ function TouchButton({
 }
 
 interface HoldControlsProps {
-  layout: "asteroids" | "arkanoid";
+  layout: "asteroids" | "arkanoid" | "pong";
   onKey: (code: string, pressed: boolean) => void;
 }
 
 interface PressControlsProps {
-  layout: "snake" | "tetris";
+  layout: "snake" | "tetris" | "frogger";
   onKey: (code: string) => void;
 }
 
@@ -257,15 +259,43 @@ function ArkanoidControls({
   );
 }
 
+function PongControls({
+  onKey,
+}: {
+  onKey: (code: string, pressed: boolean) => void;
+}) {
+  return (
+    <div className="dpad dpad-vertical">
+      <TouchButton
+        label="▲"
+        ariaLabel="Mover paleta arriba"
+        className="dpad-up"
+        onPress={() => onKey("ArrowUp", true)}
+        onRelease={() => onKey("ArrowUp", false)}
+      />
+      <TouchButton
+        label="▼"
+        ariaLabel="Mover paleta abajo"
+        className="dpad-down"
+        onPress={() => onKey("ArrowDown", true)}
+        onRelease={() => onKey("ArrowDown", false)}
+      />
+    </div>
+  );
+}
+
 export default function TouchControls(props: TouchControlsProps) {
   return (
     <div className="touch-controls" data-layout={props.layout}>
-      {props.layout === "snake" && <SnakeDpad onKey={props.onKey} />}
+      {(props.layout === "snake" || props.layout === "frogger") && (
+        <SnakeDpad onKey={props.onKey} />
+      )}
       {props.layout === "tetris" && <TetrisControls onKey={props.onKey} />}
       {props.layout === "asteroids" && (
         <AsteroidsControls onKey={props.onKey} />
       )}
       {props.layout === "arkanoid" && <ArkanoidControls onKey={props.onKey} />}
+      {props.layout === "pong" && <PongControls onKey={props.onKey} />}
     </div>
   );
 }

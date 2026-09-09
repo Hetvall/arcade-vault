@@ -1610,9 +1610,10 @@ body
   transform: scale(0.94);
 }
 
-/* D-pad: rejilla 3x3, cada botón se ubica por área nombrada. dpad-4 (snake)
-   usa las 4 direcciones; dpad-3 (tetris/asteroids) omite la fila/columna que
-   no aplica; dpad-2 (arkanoid) es solo izquierda/derecha en una fila. */
+/* D-pad: rejilla 3x3, cada botón se ubica por área nombrada. dpad-4
+   (snake/frogger) usa las 4 direcciones; dpad-3 (tetris/asteroids) omite la
+   fila/columna que no aplica; dpad-2 (arkanoid) es solo izquierda/derecha en
+   una fila; dpad-vertical (pong) es solo arriba/abajo en una columna. */
 .dpad {
   display: grid;
   grid-template-areas:
@@ -1628,6 +1629,16 @@ body
   grid-template-areas: "left right";
   grid-template-columns: repeat(2, 52px);
   grid-template-rows: 52px;
+}
+
+/* dpad-vertical (pong): la paleta solo se mueve en el eje Y, así que el pad
+   es una columna de 2 en vez de una fila. */
+.dpad-vertical {
+  grid-template-areas:
+    "up"
+    "down";
+  grid-template-columns: 52px;
+  grid-template-rows: repeat(2, 52px);
 }
 
 .dpad-up {

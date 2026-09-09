@@ -234,12 +234,27 @@ export class PongEngine {
     // del juego, esas teclas nunca llegarían al <input> del modal.
     if (this.paused || this.gameOver) return;
     if (PongEngine.GAME_KEYS.has(e.code)) e.preventDefault();
-    this.keysDown.add(e.code);
+    this.setKey(e.code, true);
   };
 
   private onKeyUp = (e: KeyboardEvent) => {
-    this.keysDown.delete(e.code);
+    this.setKey(e.code, false);
   };
+
+  // Inyección sintética de input (spec 10/14): mismo estado continuo que ya
+  // consumen onKeyDown/onKeyUp (this.keysDown, leído cada frame en
+  // updatePlayer), reutilizado por los botones táctiles vía el ref del
+  // canvas. El guard de paused/gameOver solo aplica al presionar — soltar
+  // siempre se permite para no dejar una tecla "pegada" si la partida termina
+  // mientras el botón sigue tocado.
+  setKey(code: string, pressed: boolean) {
+    if (pressed) {
+      if (this.paused || this.gameOver) return;
+      this.keysDown.add(code);
+    } else {
+      this.keysDown.delete(code);
+    }
+  }
 
   // ── Simulación ────────────────────────────────────────────────────────
   private updatePlayer() {

@@ -14,6 +14,7 @@ import {
 
 export interface PongCanvasHandle {
   restart: () => void;
+  setKey: (code: string, pressed: boolean) => void;
 }
 
 interface PongCanvasProps {
@@ -78,6 +79,9 @@ const PongCanvas = forwardRef<PongCanvasHandle, PongCanvasProps>(
     useImperativeHandle(ref, () => ({
       restart: () => {
         engineRef.current?.restart();
+      },
+      setKey: (code, pressed) => {
+        engineRef.current?.setKey(code, pressed);
       },
     }));
 
