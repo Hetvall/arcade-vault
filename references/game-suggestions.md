@@ -8,27 +8,21 @@ Estados: `[ ]` sugerido · `[~]` aprobado (spec en curso) · `[x]` implementado
 
 ## Pendientes / sugeridos
 
-- [ ] `duelo-pixel` — Pong (VERSUS) · sugerido 2026-08-14 · Razón: VERSUS solo tiene 1 juego en el
-      catálogo; Pong es mecánicamente simple y ya tiene fila en Supabase (placeholder sin engine).
-      → `/add-game duelo-pixel`
-      (reafirmado 2026-08-14: sigue siendo la mejor opción — VERSUS es la única categoría con 0
-      motores reales hoy; `references/started-games/` no trae nada nuevo que portar, así que no
-      cambia el análisis de esfuerzo/prioridad frente a `gloton`/`invasores`/`ranaria`.)
-      (confirmado por el usuario 2026-08-31: siguiente juego a portar. **Renombrado completo**:
-      el placeholder `duelo-pixel`/"DUELO PIXEL" se retira y se reemplaza por `pong`/"PONG"
-      (id, título y URL `/game/pong`), no se conserva el slug viejo. → `/add-game pong`)
-- [ ] `gloton` — Pac-Man (ARCADE) · placeholder en catálogo, sin engine.
-      (reafirmado 2026-08-14: sigue como placeholder sin motor real; sin fuente porteable nueva
-      en `references/started-games/` que cambie la prioridad.)
-- [ ] `invasores` — Space Invaders (SHOOTER) · placeholder en catálogo, sin engine.
-      (reafirmado 2026-08-14: sigue como placeholder sin motor real.)
-- [~] `ranaria` — Frogger reinventado (ARCADE) · spec en curso 2026-08-14 vía agente `game-jam`
-  (tema "Frogger"): rol invertido (garza que caza ranas cruzando autopista/río de ida y
-  vuelta), no un port 1:1. Specs en `specs/game-jam/ranaria/{01-diseno,02-tecnico}.md`
-  (Draft, pendiente de revisión humana). El técnico **actualiza** la fila `ranaria` existente
-  (mismo id/title/cat/color/cover), no inserta una fila nueva.
-- [ ] `air-hockey` — Air Hockey (VERSUS) · sugerido 2026-08-14 · Razón: VERSUS sigue sin ningún
-      motor real hoy; duelo físico en tiempo real, mecánica distinta al rebote de Pong.
+- [ ] `gloton` — Pac-Man (ARCADE) · sugerido 2026-08-14 · Razón: refuerza ARCADE con maze-chase,
+      mecánica distinta a Frogger/Arkanoid/Snake.
+      (actualizado 2026-09-09: la fila placeholder `gloton` que existía en Supabase fue **eliminada
+      del catálogo** — commit "remove unused styles and placeholder game components". Portar este
+      juego hoy implica insertar una fila **nueva**, no reutilizar/actualizar una existente.)
+      → `/add-game gloton`
+- [ ] `invasores` — Space Invaders (SHOOTER) · sugerido 2026-08-14 · Razón: refuerza SHOOTER junto
+      a Asteroids con carril fijo de disparo, mecánica distinta.
+      (actualizado 2026-09-09: la fila placeholder `invasores` que existía en Supabase fue
+      **eliminada del catálogo** — mismo commit de limpieza que `gloton`. Portar este juego hoy
+      implica insertar una fila **nueva**.)
+      → `/add-game invasores`
+- [ ] `air-hockey` — Air Hockey (VERSUS) · sugerido 2026-08-14 · Razón: VERSUS ya tiene motor real
+      (Pong, implementado 2026-08-31); Air Hockey aporta duelo físico en tiempo real, mecánica
+      distinta al rebote de paletas de Pong.
       → `/add-game air-hockey`
 - [ ] `tanques-duelo` — Combat / Battle Tanks (VERSUS) · sugerido 2026-08-14 · Razón: refuerza la
       categoría VERSUS más delgada con un shooter de laberinto a dos jugadores, mecánica de
@@ -88,3 +82,9 @@ Estados: `[ ]` sugerido · `[~]` aprobado (spec en curso) · `[x]` implementado
 - [x] `tetris` — Tetris (PUZZLE)
 - [x] `arkanoid` — Arkanoid (ARCADE)
 - [x] `snake` — Snake (ARCADE)
+- [x] `frogger` — Frogger reinventado, vía agente `game-jam` (ARCADE) · spec en
+      `specs/game-jam/frogger/01-frogger-core.md` (Implemented). Reemplazó la fila placeholder
+      `ranaria` (el técnico terminó insertando/actualizando la fila como `frogger`, no `ranaria`).
+- [x] `pong` — Pong, 1 jugador vs CPU (VERSUS) · spec `specs/14-juego-pong.md` (Implemented,
+      2026-08-31). Reemplazó por completo la fila placeholder `duelo-pixel` (id, título y URL
+      renombrados a `pong`/"PONG", sin conservar el slug viejo).

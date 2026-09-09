@@ -24,7 +24,9 @@ import PongCanvas, {
   type PongCanvasHandle,
 } from "@/components/games/pong-canvas";
 import type { PongState } from "@/lib/games/pong/engine";
-import FroggerGame from "@/lib/games/frogger/FroggerGame";
+import FroggerGame, {
+  type FroggerGameHandle,
+} from "@/lib/games/frogger/FroggerGame";
 import { resolveAsteroidsPalette } from "@/lib/games/asteroids/skins";
 import { resolveTetrisPalette } from "@/lib/games/tetris/skins";
 import { resolveArkanoidPalette } from "@/lib/games/arkanoid/skins";
@@ -96,6 +98,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   const arkanoidRef = useRef<ArkanoidCanvasHandle>(null);
   const snakeRef = useRef<SnakeCanvasHandle>(null);
   const pongRef = useRef<PongCanvasHandle>(null);
+  const froggerRef = useRef<FroggerGameHandle>(null);
 
   const isTouchDevice = useIsTouchDevice();
 
@@ -336,6 +339,7 @@ export default function GamePlayer({ game }: { game: Game }) {
             ) : (
               <FroggerGame
                 key={frogKey}
+                ref={froggerRef}
                 paused={paused || over}
                 onScoreChange={handleFroggerScoreChange}
                 onLivesChange={handleFroggerLivesChange}
@@ -463,6 +467,18 @@ export default function GamePlayer({ game }: { game: Game }) {
             <TouchControls
               layout="snake"
               onKey={(code) => snakeRef.current?.pressKey(code)}
+            />
+          )}
+          {isPong && (
+            <TouchControls
+              layout="pong"
+              onKey={(code, pressed) => pongRef.current?.setKey(code, pressed)}
+            />
+          )}
+          {isFrogger && (
+            <TouchControls
+              layout="frogger"
+              onKey={(code) => froggerRef.current?.pressKey(code)}
             />
           )}
         </>
